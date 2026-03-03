@@ -19,7 +19,6 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* Steuerung */
         .main-controls {
             background: white; padding: 15px 25px; border-radius: 50px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -32,7 +31,6 @@
         .btn-add { background: #4472C4; color: white; }
         .btn-settings { background: #6c757d; color: white; font-size: 18px; }
 
-        /* Einstellungs-Menü */
         #settings-menu {
             display: none; background: white; padding: 25px; border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 20px;
@@ -42,7 +40,6 @@
         .setting-group { display: flex; flex-direction: column; gap: 5px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
         .setting-group input { padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
 
-        /* Arbeitsfläche */
         #preview-viewport { width: 100%; overflow: auto; display: flex; justify-content: center; padding: 20px; }
         
         #export-area {
@@ -54,7 +51,7 @@
         #title-el { font-size: 2.5em; margin-bottom: 40px; outline: none; }
         
         .timeline-wrapper { 
-            position: absolute; top: 55%; left: 60px; right: 80px; 
+            position: absolute; top: 55%; left: 80px; right: 100px; 
             height: var(--line-weight); background: var(--line-color); 
         }
         
@@ -101,7 +98,7 @@
 <body>
 
     <div class="main-controls">
-        <input type="number" id="yearIn" class="input-box" placeholder="Jahr" style="width: 80px;">
+        <input type="text" id="yearIn" class="input-box" placeholder="Jahr (z.B. 500 v. Chr.)" style="width: 150px;">
         <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 250px;" onkeydown="if(event.key==='Enter') addEvent()">
         <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
         <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
@@ -161,6 +158,15 @@
         render();
     }
 
+    // Wandelt "500 v. Chr." oder "-500" in eine echte Zahl um für die Sortierung
+    function parseYear(val) {
+        let str = val.toString().toLowerCase();
+        let num = parseInt(str.replace(/[^0-9-]/g, ''));
+        if (isNaN(num)) return 0;
+        if (str.includes('v.') || str.includes('vor')) return -Math.abs(num);
+        return num;
+    }
+
     function addEvent() {
         const y = document.getElementById('yearIn'), d = document.getElementById('descIn');
         if(!y.value || !d.value) return;
@@ -170,7 +176,7 @@
     }
 
     function sortEvents() {
-        eventsData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
+        eventsData.sort((a, b) => parseYear(a.year) - parseYear(b.year));
         render();
     }
 
@@ -194,7 +200,6 @@
 
         eventsData.forEach((ev, i) => {
             const isTop = i % 2 === 0;
-            // Pos-Berechnung mit 5% Puffer links/rechts gegen Abschneiden
             const pos = eventsData.length > 1 ? 5 + (i / (eventsData.length - 1)) * 90 : 50;
             const div = document.createElement('div');
             div.className = `event ${isTop ? 'top' : 'bottom'}`;
