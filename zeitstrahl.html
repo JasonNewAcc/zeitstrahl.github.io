@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Zeitstrahl Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { 
+            --line-color: #4472C4; 
+            --line-weight: 4px; 
+            --event-gap: 40px;
+            --year-size: 1.5em;
+            --info-size: 0.9em;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #cbd2d9; margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* Steuerung */
+        .main-controls {
+            background: white; padding: 15px 25px; border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: flex; gap: 15px; align-items: center;
+            margin-bottom: 20px; position: sticky; top: 10px; z-index: 1000;
+        }
+
+        .input-box { padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+        .btn { padding: 8px 20px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: #4472C4; color: white; }
+        .btn-settings { background: #6c757d; color: white; font-size: 18px; }
+
+        /* Einstellungs-Menü */
+        #settings-menu {
+            display: none; background: white; padding: 25px; border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 20px;
+            gap: 20px; flex-wrap: wrap; justify-content: center;
+        }
+
+        .setting-group { display: flex; flex-direction: column; gap: 5px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
+        .setting-group input { padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* Arbeitsfläche */
+        #preview-viewport { width: 100%; overflow: auto; display: flex; justify-content: center; padding: 20px; }
+        
+        #export-area {
+            background: white; padding: 60px 80px; position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.2);
+            width: 1100px; min-height: 650px; box-sizing: border-box; overflow: hidden;
+        }
+
+        #title-el { font-size: 2.5em; margin-bottom: 40px; outline: none; }
+        
+        .timeline-wrapper { 
+            position: absolute; top: 55%; left: 60px; right: 80px; 
+            height: var(--line-weight); background: var(--line-color); 
+        }
+        
+        .timeline-wrapper::after {
+            content: ''; position: absolute; right: -25px; top: 50%; transform: translateY(-50%);
+            border-top: 15px solid transparent; border-bottom: 15px solid transparent;
+            border-left: 25px solid var(--line-color);
+        }
+
+        .event { position: absolute; width: 200px; transform: translateX(-50%); display: flex; align-items: center; z-index: 10; }
+        .event.top { bottom: 0; flex-direction: column; padding-bottom: var(--event-gap); }
+        .event.bottom { top: 0; flex-direction: column-reverse; padding-top: var(--event-gap); }
+
+        .connector { width: 2px; height: 60px; background: var(--line-color); cursor: pointer; position: relative; }
+        .connector:hover { background: #ff4444; width: 3px; }
+
+        .milestone-badge {
+            position: absolute; left: 50%; transform: translate(-50%, -50%);
+            background: white; border: 2px solid var(--line-color); border-radius: 50%;
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; z-index: 20;
+        }
+        .event.top .milestone-badge { top: 50%; }
+        .event.bottom .milestone-badge { bottom: 50%; }
+
+        .content-box { text-align: center; width: 100%; }
+        .year { font-size: var(--year-size); font-weight: bold; margin: 0; outline: none; }
+        .divider { width: 30px; height: 3px; background: var(--line-color); margin: 8px auto; }
+        .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; border-radius: 4px; padding: 4px; }
+
+        .footer-note { position: absolute; bottom: 20px; right: 40px; font-size: 12px; color: #999; }
+
+        #emoji-picker {
+            display: none; position: absolute; background: white; border: 1px solid #ccc;
+            padding: 10px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 3000; grid-template-columns: repeat(4, 1fr); gap: 5px;
+        }
+        .emoji-btn { cursor: pointer; font-size: 20px; padding: 5px; border-radius: 4px; text-align: center; }
+        .emoji-btn:hover { background: #eee; }
+
+        @media print { .main-controls, #settings-menu, #emoji-picker { display: none !important; } }
+    </style>
+</head>
+<body>
+
+    <div class="main-controls">
+        <input type="number" id="yearIn" class="input-box" placeholder="Jahr" style="width: 80px;">
+        <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 250px;" onkeydown="if(event.key==='Enter') addEvent()">
+        <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
+        <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
+        <button class="btn btn-settings" onclick="toggleSettings()">⚙️</button>
+    </div>
+
+    <div id="settings-menu">
+        <div class="setting-group"><label>Symbole</label><input type="checkbox" id="allowIcons" checked onchange="apply()"></div>
+        <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:5px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="apply()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="apply()"></div></div>
+        <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:5px;"><input type="number" id="yearSizeSet" value="28" style="width:45px;" oninput="apply()"><input type="number" id="infoSizeSet" value="16" style="width:45px;" oninput="apply()"></div></div>
+        <div class="setting-group"><label>Linie Farbe / Dicke</label><div style="display:flex;gap:5px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="apply()"><input type="number" id="lineWeightSet" value="4" style="width:40px;" oninput="apply()"></div></div>
+        <div class="setting-group">
+            <label>Optionen</label>
+            <div style="display:flex; gap:10px;"><label><input type="checkbox" id="titleShowSet" checked onchange="apply()"> Titel</label><label><input type="checkbox" id="footSet" checked onchange="apply()"> Sig.</label></div>
+        </div>
+        <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
+    </div>
+
+    <div id="emoji-picker">
+        <span class="emoji-btn" onclick="setEmoji('')">❌</span>
+        <span class="emoji-btn" onclick="setEmoji('👑')">👑</span>
+        <span class="emoji-btn" onclick="setEmoji('⚔️')">⚔️</span>
+        <span class="emoji-btn" onclick="setEmoji('💡')">💡</span>
+        <span class="emoji-btn" onclick="setEmoji('📍')">📍</span>
+        <span class="emoji-btn" onclick="setEmoji('📜')">📜</span>
+        <span class="emoji-btn" onclick="setEmoji('🔥')">🔥</span>
+        <span class="emoji-btn" onclick="setEmoji('🌍')">🌍</span>
+    </div>
+
+    <div id="preview-viewport">
+        <div id="export-area">
+            <h1 id="title-el" contenteditable="true">Mein Zeitstrahl</h1>
+            <div class="timeline-wrapper"><div id="events-container" style="position:relative; width:100%; height:100%;"></div></div>
+            <div id="footer-text" class="footer-note">erstellt mit website.com</div>
+        </div>
+    </div>
+
+<script>
+    let eventsData = [];
+    let activeEventIdx = -1;
+
+    function toggleSettings() {
+        const m = document.getElementById('settings-menu');
+        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function apply() {
+        const area = document.getElementById('export-area');
+        area.style.width = document.getElementById('wSet').value + "px";
+        area.style.height = document.getElementById('hSet').value + "px";
+        document.documentElement.style.setProperty('--year-size', document.getElementById('yearSizeSet').value + "px");
+        document.documentElement.style.setProperty('--info-size', document.getElementById('infoSizeSet').value + "px");
+        document.documentElement.style.setProperty('--line-color', document.getElementById('lineColorSet').value);
+        document.documentElement.style.setProperty('--line-weight', document.getElementById('lineWeightSet').value + "px");
+        document.getElementById('title-el').style.display = document.getElementById('titleShowSet').checked ? 'block' : 'none';
+        document.getElementById('footer-text').style.display = document.getElementById('footSet').checked ? 'block' : 'none';
+        render();
+    }
+
+    function addEvent() {
+        const y = document.getElementById('yearIn'), d = document.getElementById('descIn');
+        if(!y.value || !d.value) return;
+        eventsData.push({ id: Date.now(), year: y.value, desc: d.value, icon: '' });
+        y.value=""; d.value=""; y.focus();
+        render();
+    }
+
+    function sortEvents() {
+        eventsData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
+        render();
+    }
+
+    function openEmojiPicker(e, idx) {
+        if(!document.getElementById('allowIcons').checked) return;
+        e.stopPropagation(); activeEventIdx = idx;
+        const picker = document.getElementById('emoji-picker');
+        picker.style.display = 'grid';
+        picker.style.left = e.pageX + 'px'; picker.style.top = e.pageY + 'px';
+    }
+
+    function setEmoji(emoji) {
+        if(activeEventIdx !== -1) { eventsData[activeEventIdx].icon = emoji; render(); }
+        document.getElementById('emoji-picker').style.display = 'none';
+    }
+
+    function render() {
+        const container = document.getElementById('events-container');
+        container.innerHTML = "";
+        const showIcons = document.getElementById('allowIcons').checked;
+
+        eventsData.forEach((ev, i) => {
+            const isTop = i % 2 === 0;
+            // Pos-Berechnung mit 5% Puffer links/rechts gegen Abschneiden
+            const pos = eventsData.length > 1 ? 5 + (i / (eventsData.length - 1)) * 90 : 50;
+            const div = document.createElement('div');
+            div.className = `event ${isTop ? 'top' : 'bottom'}`;
+            div.style.left = pos + "%";
+            div.innerHTML = `
+                <div class="content-box">
+                    <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
+                    <div class="divider"></div>
+                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText">${ev.desc}</div>
+                </div>
+                <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
+                    ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function downloadPDF() {
+        const element = document.getElementById('export-area');
+        html2pdf().set({
+            margin: 0, filename: 'zeitstrahl.pdf', html2canvas: { scale: 2 },
+            jsPDF: { unit: 'px', format: [parseInt(document.getElementById('wSet').value), parseInt(document.getElementById('hSet').value)], orientation: 'landscape' }
+        }).from(element).save();
+    }
+
+    document.addEventListener('click', () => document.getElementById('emoji-picker').style.display = 'none');
+    apply();
+</script>
+</body>
+</html>
