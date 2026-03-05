@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Zeitstrahl Generator Pro</title>
+    <title>Zeitstrahl Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { 
@@ -18,7 +18,6 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* Präsentations-Modus */
         body.pres-mode { background: #111; overflow: hidden; }
         body.pres-mode .main-controls, body.pres-mode #settings-menu, body.pres-mode #header-editor { display: none !important; }
         
@@ -30,7 +29,6 @@
             box-shadow: 0 0 40px rgba(255,215,0,0.6);
         }
 
-        /* Controls */
         .main-controls {
             background: white; padding: 12px 20px; border-radius: 50px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -43,7 +41,6 @@
         .btn-add { background: #4472C4; color: white; }
         .btn-pres { background: #2c3e50; color: white; }
 
-        /* Header Editor */
         #header-editor {
             display: none; position: absolute; background: #222; color: white;
             padding: 10px; border-radius: 8px; gap: 10px; z-index: 2000;
@@ -51,7 +48,6 @@
         }
         #header-editor button, #header-editor input { background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
 
-        /* Settings Menu */
         #settings-menu {
             display: none; background: white; padding: 20px; border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2); margin-bottom: 15px;
@@ -60,7 +56,7 @@
         .setting-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
         .setting-group input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
 
-        /* Export Area */
+        /* Das Export-Area Design */
         #export-area {
             background: white; padding: 60px 80px; position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.2);
@@ -68,37 +64,42 @@
             display: flex; flex-direction: column;
         }
 
-        #title-el { font-size: 2.5em; margin-bottom: 30px; outline: none; text-align: center; }
+        #title-el { font-size: 2.5em; margin-bottom: 20px; outline: none; text-align: center; flex-shrink: 0; }
         
-        /* Das stabile Grid-System für die Linie */
-        .timeline-wrapper {
-            position: relative; flex-grow: 1;
-            display: grid; grid-template-rows: 1fr var(--line-weight) 1fr;
+        /* Das stabile Zentrum */
+        .timeline-visual-space {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Hält die Linie vertikal mittig */
         }
 
-        .main-line { 
-            background: var(--line-color); position: relative; align-self: center;
-            height: 100%; border-radius: 2px;
+        .main-timeline-line { 
+            width: 100%;
+            height: var(--line-weight); 
+            background: var(--line-color); 
+            position: relative;
+            z-index: 1;
         }
-        .main-line::after {
-            content: ''; position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+        .main-timeline-line::after {
+            content: ''; position: absolute; right: -25px; top: 50%; transform: translateY(-50%);
             border-top: 15px solid transparent; border-bottom: 15px solid transparent;
-            border-left: 20px solid var(--line-color);
+            border-left: 25px solid var(--line-color);
         }
 
-        /* Events Layer */
-        .events-overlay {
+        #events-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 10;
+            pointer-events: none; z-index: 5;
         }
-        .events-overlay * { pointer-events: auto; }
+        #events-container * { pointer-events: auto; }
 
         .event { 
             position: absolute; width: 220px; transform: translateX(-50%); 
             display: flex; align-items: center; transition: all 0.3s;
         }
-        
-        /* Die Ereignisse docken jetzt absolut sicher an der 50%-Marke (Linie) an */
+
+        /* Die Ereignisse docken nun SICHER an der Mittellinie an */
         .event.top { bottom: 50%; padding-bottom: calc(var(--line-weight) / 2); flex-direction: column; }
         .event.bottom { top: 50%; padding-top: calc(var(--line-weight) / 2); flex-direction: column-reverse; }
 
@@ -143,8 +144,7 @@
         <div class="setting-group"><label>Symbole</label><input type="checkbox" id="allowIcons" checked onchange="render()"></div>
         <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="applyAllSettings()"></div></div>
         <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:4px;"><input type="number" id="yearSizeSet" value="26" style="width:45px;" oninput="applyAllSettings()"><input type="number" id="infoSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"></div></div>
-        <div class="setting-group"><label>Linie Dicke</label><input type="number" id="lineWeightSet" value="4" style="width:45px;" oninput="applyAllSettings()"></div>
-        <div class="setting-group"><label>Farbe</label><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"></div>
+        <div class="setting-group"><label>Linie Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="lineWeightSet" value="4" style="width:35px;" oninput="applyAllSettings()"></div></div>
         <div class="setting-group"><label>Limit/Stopp</label><div style="display:flex;gap:4px;"><input type="number" id="limitSet" value="120" style="width:40px;" oninput="applyAllSettings()"><input type="checkbox" id="hardStopSet"></div></div>
         <div class="setting-group"><label>Optionen</label><div style="display:flex; gap:10px;"><label><input type="checkbox" id="titleShowSet" checked onchange="applyAllSettings()"> Titel</label><label><input type="checkbox" id="footSet" checked onchange="applyAllSettings()"> Sig.</label></div></div>
         <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
@@ -165,11 +165,11 @@
 
     <div id="export-area">
         <h1 id="title-el" contenteditable="true" onfocus="showTitleEditor(event)">Mein Zeitstrahl</h1>
-        <div class="timeline-wrapper">
-            <div class="main-line"></div>
-            <div id="events-container" class="events-overlay"></div>
+        <div class="timeline-visual-space">
+            <div class="main-timeline-line"></div>
+            <div id="events-container"></div>
         </div>
-        <div id="footer-text" style="text-align: right; font-size: 10px; color: #999; margin-top: 10px;">erstellt mit jasonnewacc.github.io/zeitstrahl.github.io/main</div>
+        <div id="footer-text" style="text-align: right; font-size: 10px; color: #999; padding-top: 10px;">erstellt mit jasonnewacc.github.io/zeitstrahl.github.io/main</div>
     </div>
 
 <script>
@@ -179,7 +179,7 @@
 
     function toggleSettings() {
         const s = document.getElementById('settings-menu');
-        s.style.display = (s.style.display === 'flex') ? 'none' : 'flex';
+        s.style.display = s.style.display === 'flex' ? 'none' : 'flex';
     }
 
     function showTitleEditor(e) {
@@ -208,16 +208,23 @@
         render();
     }
 
+    function parseYear(val) {
+        let str = val.toString().toLowerCase();
+        let num = parseInt(str.replace(/[^0-9-]/g, ''));
+        if (isNaN(num)) return 0;
+        return (str.includes('v.') || str.includes('vor')) ? -Math.abs(num) : num;
+    }
+
     function addEvent() {
         const y = document.getElementById('yearIn'), d = document.getElementById('descIn');
-        if(!y.value) return;
+        if(!y.value || !d.value) return;
         eventsData.push({ id: Date.now(), year: y.value, desc: d.value, icon: '' });
         y.value=""; d.value=""; y.focus();
         render();
     }
 
     function sortEvents() {
-        eventsData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
+        eventsData.sort((a, b) => parseYear(a.year) - parseYear(b.year));
         render();
     }
 
@@ -293,7 +300,11 @@
     }
 
     function downloadPDF() {
-        html2pdf().from(document.getElementById('export-area')).save('zeitstrahl.pdf');
+        const area = document.getElementById('export-area');
+        html2pdf().set({
+            margin: 0, filename: 'zeitstrahl.pdf', html2canvas: { scale: 2 },
+            jsPDF: { unit: 'px', format: [parseInt(document.getElementById('wSet').value), parseInt(document.getElementById('hSet').value)], orientation: 'landscape' }
+        }).from(area).save();
     }
 
     document.addEventListener('mousedown', (e) => {
