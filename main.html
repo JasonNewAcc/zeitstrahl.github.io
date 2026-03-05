@@ -81,22 +81,27 @@
         }
         #events-container * { pointer-events: auto; }
 
-/* Ersetze das alte .event CSS hiermit */
 .event { 
     position: absolute; 
     width: 220px; 
-    /* transform: translateX(-50%); <-- Diese Zeile ENTFERNEN */
-    margin-left: -110px; /* Die Hälfte der Breite manuell setzen für PDF-Stabilität */
+    margin-left: -110px; /* Zentriert das Element exakt über dem Punkt */
     display: flex; 
+    flex-direction: column; 
     align-items: center; 
-    z-index: 10; 
-    transition: all 0.3s;
+    z-index: 10;
 }
-        
-        .event.top { bottom: calc(45% + (var(--line-weight)/2)); flex-direction: column; }
-        .event.bottom { top: calc(55% + (var(--line-weight)/2)); flex-direction: column-reverse; }
 
-        .connector { width: 2px; height: 60px; background: var(--line-color); cursor: pointer; position: relative; }
+/* Wir entfernen die automatische Flex-Umkehrung, da wir die Position per JS festlegen */
+.event.top { justify-content: flex-end; }
+.event.bottom { justify-content: flex-start; }
+
+.connector { 
+    width: 2px; 
+    height: 60px; 
+    background: var(--line-color); 
+    position: relative; 
+    flex-shrink: 0;
+}
         
         .milestone-badge {
             position: absolute; left: 50%; transform: translate(-50%, -50%);
@@ -246,45 +251,49 @@ function render() {
     const showIcons = document.getElementById('allowIcons').checked;
     const width = parseInt(document.getElementById('wSet').value);
     const lineWeight = parseInt(document.getElementById('lineWeightSet').value);
+    const timelineY = 55; // Die 55% Position der Hauptlinie
 
     const paddingSide = 120; 
     const availableWidth = width - (paddingSide * 2);
 
     eventsData.forEach((ev, i) => {
         const isTop = i % 2 === 0;
-        let pos;
-        if (eventsData.length > 1) {
-            pos = paddingSide + (i / (eventsData.length - 1)) * availableWidth;
-        } else {
-            pos = width / 2;
-        }
+        let pos = (eventsData.length > 1) 
+            ? paddingSide + (i / (eventsData.length - 1)) * availableWidth 
+            : width / 2;
 
         const div = document.createElement('div');
         div.className = `event ${isTop ? 'top' : 'bottom'}`;
         div.id = `ev-dom-${i}`;
         div.style.left = pos + "px";
         
-        // Fix für vertikale Positionierung ohne komplexes Calc im Export
+        // Exakte Positionierung direkt an die Hauptlinie ohne Lücke
         if(isTop) {
-            div.style.bottom = (45 + (lineWeight/2)) + "%";
+            div.style.bottom = (100 - timelineY) + "%"; 
+            div.style.marginBottom = (lineWeight / 2) + "px";
         } else {
-            div.style.top = (55 + (lineWeight/2)) + "%";
+            div.style.top = timelineY + "%";
+            div.style.marginTop = (lineWeight / 2) + "px";
         }
-        
-        div.innerHTML = `
+
+        // Wir bauen den Inhalt je nach Position (Top/Bottom) unterschiedlich zusammen
+        const contentHtml = `
             <div class="content-box">
                 <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
                 <div class="divider"></div>
                 <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
-            </div>
+            </div>`;
+        
+        const connectorHtml = `
             <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
                 ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
-            </div>
-        `;
+            </div>`;
+
+        div.innerHTML = isTop ? (contentHtml + connectorHtml) : (connectorHtml + contentHtml);
+        
         container.appendChild(div);
     });
 }
-
     function checkLimit(el) {
         if(!el) return;
         const limit = parseInt(document.getElementById('limitSet').value);
@@ -323,4 +332,5 @@ function render() {
 </script>
 </body>
 </html>
+
 
