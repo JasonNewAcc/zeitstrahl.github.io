@@ -18,6 +18,7 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
+        /* Präsentations-Modus */
         body.pres-mode { background: #111; overflow: hidden; }
         body.pres-mode .main-controls, body.pres-mode #settings-menu, body.pres-mode #header-editor { display: none !important; }
         
@@ -25,10 +26,11 @@
             outline: 4px solid gold !important; 
             transform: translateX(-50%) scale(1.3) !important; 
             z-index: 1000 !important; 
-            background: white; border-radius: 10px; padding: 10px;
+            background: white; border-radius: 10px; padding: 15px;
             box-shadow: 0 0 40px rgba(255,215,0,0.6);
         }
 
+        /* Controls */
         .main-controls {
             background: white; padding: 12px 20px; border-radius: 50px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -41,6 +43,7 @@
         .btn-add { background: #4472C4; color: white; }
         .btn-pres { background: #2c3e50; color: white; }
 
+        /* Header Editor */
         #header-editor {
             display: none; position: absolute; background: #222; color: white;
             padding: 10px; border-radius: 8px; gap: 10px; z-index: 2000;
@@ -48,22 +51,24 @@
         }
         #header-editor button, #header-editor input { background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
 
+        /* Settings Menu */
         #settings-menu {
             display: none; background: white; padding: 20px; border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2); margin-bottom: 15px;
             gap: 15px; flex-wrap: wrap; justify-content: center;
         }
         .setting-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
+        .setting-group input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
 
+        /* Export Area */
         #export-area {
             background: white; padding: 60px 80px; position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.2);
-            width: 1100px; min-height: 650px; box-sizing: border-box; overflow: visible; /* WICHTIG */
+            width: 1100px; min-height: 650px; box-sizing: border-box; overflow: visible;
         }
 
         #title-el { font-size: 2.5em; margin-bottom: 30px; outline: none; }
         
-        /* Die Hauptlinie */
         .main-timeline-line { 
             position: absolute; top: 55%; left: 80px; right: 100px; 
             height: var(--line-weight); background: var(--line-color); 
@@ -75,14 +80,12 @@
             border-left: 25px solid var(--line-color);
         }
 
-        /* Ereignis-Container Fix */
+        /* Events */
         .event { 
-            position: absolute; width: 210px; transform: translateX(-50%); 
+            position: absolute; width: 220px; transform: translateX(-50%); 
             display: flex; align-items: center; z-index: 10; transition: all 0.3s;
         }
-        /* Top-Ereignisse docken von oben an die 55%-Linie an */
         .event.top { bottom: calc(45% + (var(--line-weight)/2)); flex-direction: column; }
-        /* Bottom-Ereignisse docken von unten an die 55%-Linie an */
         .event.bottom { top: calc(55% + (var(--line-weight)/2)); flex-direction: column-reverse; }
 
         .connector { width: 2px; height: 60px; background: var(--line-color); cursor: pointer; position: relative; }
@@ -106,6 +109,7 @@
             display: none; position: absolute; background: white; border: 1px solid #ccc;
             padding: 10px; border-radius: 8px; z-index: 3000; grid-template-columns: repeat(4, 1fr); gap: 5px;
         }
+        .emoji-btn { cursor: pointer; font-size: 20px; padding: 5px; text-align: center; }
 
         @media print { .main-controls, #settings-menu, #header-editor, #emoji-picker { display: none !important; } }
     </style>
@@ -113,7 +117,7 @@
 <body>
 
     <div class="main-controls">
-        <input type="text" id="yearIn" class="input-box" placeholder="Jahr" style="width: 120px;">
+        <input type="text" id="yearIn" class="input-box" placeholder="Jahr (v. Chr.)" style="width: 120px;">
         <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 220px;" onkeydown="if(event.key==='Enter') addEvent()">
         <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
         <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
@@ -123,10 +127,11 @@
 
     <div id="settings-menu">
         <div class="setting-group"><label>Symbole</label><input type="checkbox" id="allowIcons" checked onchange="render()"></div>
-        <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:50px;" oninput="applyStyle()"><input type="number" id="hSet" value="650" style="width:50px;" oninput="applyStyle()"></div></div>
-        <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:4px;"><input type="number" id="yearSizeSet" value="26" style="width:40px;" oninput="applyStyle()"><input type="number" id="infoSizeSet" value="16" style="width:40px;" oninput="applyStyle()"></div></div>
-        <div class="setting-group"><label>Linie Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyStyle()"><input type="number" id="lineWeightSet" value="4" style="width:35px;" oninput="applyStyle()"></div></div>
-        <div class="setting-group"><label>Limit</label><div style="display:flex;gap:4px;"><input type="number" id="limitSet" value="120" style="width:40px;" oninput="applyStyle()"><input type="checkbox" id="hardStopSet"></div></div>
+        <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:4px;"><input type="number" id="yearSizeSet" value="26" style="width:45px;" oninput="applyAllSettings()"><input type="number" id="infoSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Linie Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="lineWeightSet" value="4" style="width:35px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Limit/Stopp</label><div style="display:flex;gap:4px;"><input type="number" id="limitSet" value="120" style="width:40px;" oninput="applyAllSettings()"><input type="checkbox" id="hardStopSet"></div></div>
+        <div class="setting-group"><label>Optionen</label><div style="display:flex; gap:10px;"><label><input type="checkbox" id="titleShowSet" checked onchange="applyAllSettings()"> Titel</label><label><input type="checkbox" id="footSet" checked onchange="applyAllSettings()"> Sig.</label></div></div>
         <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
     </div>
 
@@ -139,7 +144,10 @@
     </div>
 
     <div id="emoji-picker">
-        <span onclick="setEmoji('')">❌</span><span onclick="setEmoji('👑')">👑</span><span onclick="setEmoji('⚔️')">⚔️</span><span onclick="setEmoji('💡')">💡</span>
+        <span class="emoji-btn" onclick="setEmoji('')">❌</span>
+        <span class="emoji-btn" onclick="setEmoji('👑')">👑</span><span class="emoji-btn" onclick="setEmoji('⚔️')">⚔️</span>
+        <span class="emoji-btn" onclick="setEmoji('💡')">💡</span><span class="emoji-btn" onclick="setEmoji('📜')">📜</span>
+        <span class="emoji-btn" onclick="setEmoji('🔥')">🔥</span><span class="emoji-btn" onclick="setEmoji('🌍')">🌍</span>
     </div>
 
     <div id="export-area">
@@ -172,7 +180,7 @@
         else document.execCommand(cmd, false, val);
     }
 
-    function applyStyle() {
+    function applyAllSettings() {
         const area = document.getElementById('export-area');
         area.style.width = document.getElementById('wSet').value + "px";
         area.style.height = document.getElementById('hSet').value + "px";
@@ -180,6 +188,8 @@
         document.documentElement.style.setProperty('--info-size', document.getElementById('infoSizeSet').value + "px");
         document.documentElement.style.setProperty('--line-color', document.getElementById('lineColorSet').value);
         document.documentElement.style.setProperty('--line-weight', document.getElementById('lineWeightSet').value + "px");
+        document.getElementById('title-el').style.display = document.getElementById('titleShowSet').checked ? 'block' : 'none';
+        document.getElementById('footer-text').style.display = document.getElementById('footSet').checked ? 'block' : 'none';
         render();
     }
 
@@ -226,14 +236,18 @@
         const container = document.getElementById('events-container');
         container.innerHTML = "";
         const showIcons = document.getElementById('allowIcons').checked;
+        const width = parseInt(document.getElementById('wSet').value);
+        const limit = parseInt(document.getElementById('limitSet').value);
+        const hardStop = document.getElementById('hardStopSet').checked;
 
         eventsData.forEach((ev, i) => {
             const isTop = i % 2 === 0;
-            const pos = eventsData.length > 1 ? 80 + (i / (eventsData.length - 1)) * (parseInt(document.getElementById('wSet').value) - 180) : 550;
+            const pos = eventsData.length > 1 ? 80 + (i / (eventsData.length - 1)) * (width - 180) : width/2;
             const div = document.createElement('div');
             div.className = `event ${isTop ? 'top' : 'bottom'}`;
             div.id = `ev-dom-${i}`;
             div.style.left = pos + "px";
+            
             div.innerHTML = `
                 <div class="content-box">
                     <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
@@ -245,13 +259,17 @@
                 </div>
             `;
             container.appendChild(div);
+            checkLimit(div.querySelector('.description'));
         });
     }
 
     function checkLimit(el) {
         const limit = parseInt(document.getElementById('limitSet').value);
-        if(el.innerText.length > limit) el.classList.add('limit-exceeded');
-        else el.classList.remove('limit-exceeded');
+        const hardStop = document.getElementById('hardStopSet').checked;
+        if(el.innerText.length > limit) {
+            if(hardStop) el.innerText = el.innerText.substring(0, limit);
+            else el.classList.add('limit-exceeded');
+        } else el.classList.remove('limit-exceeded');
     }
 
     function openEmojiPicker(e, idx) {
@@ -266,7 +284,11 @@
     }
 
     function downloadPDF() {
-        html2pdf().from(document.getElementById('export-area')).save('zeitstrahl.pdf');
+        const area = document.getElementById('export-area');
+        html2pdf().set({
+            margin: 0, filename: 'zeitstrahl.pdf', html2canvas: { scale: 2 },
+            jsPDF: { unit: 'px', format: [parseInt(document.getElementById('wSet').value), parseInt(document.getElementById('hSet').value)], orientation: 'landscape' }
+        }).from(area).save();
     }
 
     document.addEventListener('mousedown', (e) => {
@@ -274,7 +296,7 @@
         if(!e.target.closest('#emoji-picker')) document.getElementById('emoji-picker').style.display = 'none';
     });
 
-    applyStyle();
+    applyAllSettings();
 </script>
 </body>
 </html>
