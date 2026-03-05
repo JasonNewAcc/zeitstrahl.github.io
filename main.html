@@ -23,7 +23,7 @@
         
         .focus-event { 
             outline: 4px solid gold !important; 
-            transform: translateX(-50%) scale(1.3) !important; 
+            transform: scale(1.3) !important; 
             z-index: 1000 !important; 
             background: white; border-radius: 10px; padding: 15px;
             box-shadow: 0 0 40px rgba(255,215,0,0.6);
@@ -81,31 +81,28 @@
         }
         #events-container * { pointer-events: auto; }
 
-.event { 
-    position: absolute; 
-    width: 220px; 
-    margin-left: -110px; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    z-index: 10;
-    /* Verhindert, dass Browser Abstände hinzufügen */
-    padding: 0;
-}
+        .event { 
+            position: absolute; 
+            width: 220px; 
+            margin-left: -110px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            z-index: 10;
+            padding: 0;
+        }
 
-/* Wir entfernen die automatische Flex-Umkehrung, da wir die Position per JS festlegen */
-.event.top { justify-content: flex-end; }
-.event.bottom { justify-content: flex-start; }
+        .event.top { justify-content: flex-end; }
+        .event.bottom { justify-content: flex-start; }
 
-.connector { 
-    width: 2px; 
-    height: 60px; 
-    background: var(--line-color); 
-    position: relative; 
-    /* Sorgt dafür, dass die Linie nicht gestaucht wird */
-    flex-shrink: 0; 
-    margin: 0;
-}
+        .connector { 
+            width: 2px; 
+            height: 60px; 
+            background: var(--line-color); 
+            position: relative; 
+            flex-shrink: 0; 
+            margin: 0;
+        }
         
         .milestone-badge {
             position: absolute; left: 50%; transform: translate(-50%, -50%);
@@ -116,13 +113,13 @@
         .event.top .milestone-badge { top: 50%; }
         .event.bottom .milestone-badge { bottom: 50%; }
 
-.content-box { 
-    text-align: center; 
-    width: 100%;
-    /* Verhindert zusätzliche Abstände nach unten/oben */
-    display: block; 
-    margin: 0;
-}
+        .content-box { 
+            text-align: center; 
+            width: 100%;
+            display: block; 
+            margin: 0;
+        }
+
         .year { font-size: var(--year-size); font-weight: bold; margin: 0; outline: none; }
         .divider { width: 30px; height: 3px; background: var(--line-color); margin: 8px auto; }
         .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; border-radius: 4px; padding: 4px; }
@@ -153,6 +150,7 @@
         <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="applyAllSettings()"></div></div>
         <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:4px;"><input type="number" id="yearSizeSet" value="26" style="width:45px;" oninput="applyAllSettings()"><input type="number" id="infoSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"></div></div>
         <div class="setting-group"><label>Linie Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="lineWeightSet" value="4" style="width:35px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Lücke Korrektur</label><input type="range" id="gapAdjSet" min="-15" max="15" value="0" oninput="render()"></div>
         <div class="setting-group"><label>Limit/Stopp</label><div style="display:flex;gap:4px;"><input type="number" id="limitSet" value="120" style="width:40px;" oninput="applyAllSettings()"><input type="checkbox" id="hardStopSet"></div></div>
         <div class="setting-group"><label>Optionen</label><div style="display:flex; gap:10px;"><label><input type="checkbox" id="titleShowSet" checked onchange="applyAllSettings()"> Titel</label><label><input type="checkbox" id="footSet" checked onchange="applyAllSettings()"> Sig.</label></div></div>
         <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
@@ -255,55 +253,57 @@
         if(target) target.classList.add('focus-event');
     }
 
-function render() {
-    const container = document.getElementById('events-container');
-    container.innerHTML = "";
-    const showIcons = document.getElementById('allowIcons').checked;
-    const width = parseInt(document.getElementById('wSet').value);
-    const lineWeight = parseInt(document.getElementById('lineWeightSet').value);
-    const timelineY = 55; // Die 55% Position der Hauptlinie
+    function render() {
+        const container = document.getElementById('events-container');
+        container.innerHTML = "";
+        const showIcons = document.getElementById('allowIcons').checked;
+        const width = parseInt(document.getElementById('wSet').value);
+        const lineWeight = parseInt(document.getElementById('lineWeightSet').value);
+        const gapAdj = parseInt(document.getElementById('gapAdjSet').value); 
+        const timelineY = 55; 
 
-    const paddingSide = 120; 
-    const availableWidth = width - (paddingSide * 2);
+        const paddingSide = 120; 
+        const availableWidth = width - (paddingSide * 2);
 
-    eventsData.forEach((ev, i) => {
-        const isTop = i % 2 === 0;
-        let pos = (eventsData.length > 1) 
-            ? paddingSide + (i / (eventsData.length - 1)) * availableWidth 
-            : width / 2;
+        eventsData.forEach((ev, i) => {
+            const isTop = i % 2 === 0;
+            let pos = (eventsData.length > 1) 
+                ? paddingSide + (i / (eventsData.length - 1)) * availableWidth 
+                : width / 2;
 
-        const div = document.createElement('div');
-        div.className = `event ${isTop ? 'top' : 'bottom'}`;
-        div.id = `ev-dom-${i}`;
-        div.style.left = pos + "px";
-        
-        // Exakte Positionierung direkt an die Hauptlinie ohne Lücke
-        if(isTop) {
-            div.style.bottom = (100 - timelineY) + "%"; 
-            div.style.marginBottom = (lineWeight / 2) + "px";
-        } else {
-            div.style.top = timelineY + "%";
-            div.style.marginTop = (lineWeight / 2) + "px";
-        }
+            const div = document.createElement('div');
+            div.className = `event ${isTop ? 'top' : 'bottom'}`;
+            div.id = `ev-dom-${i}`;
+            div.style.left = pos + "px";
+            
+            if(isTop) {
+                div.style.bottom = (100 - timelineY) + "%"; 
+                div.style.marginBottom = ((lineWeight / 2) - gapAdj) + "px";
+                div.style.top = "auto";
+            } else {
+                div.style.top = timelineY + "%";
+                div.style.marginTop = ((lineWeight / 2) - gapAdj) + "px";
+                div.style.bottom = "auto";
+            }
 
-        // Wir bauen den Inhalt je nach Position (Top/Bottom) unterschiedlich zusammen
-        const contentHtml = `
-            <div class="content-box">
-                <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
-                <div class="divider"></div>
-                <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
-            </div>`;
-        
-        const connectorHtml = `
-            <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
-                ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
-            </div>`;
+            const contentHtml = `
+                <div class="content-box">
+                    <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
+                    <div class="divider"></div>
+                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
+                </div>`;
+            
+            const connectorHtml = `
+                <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
+                    ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
+                </div>`;
 
-        div.innerHTML = isTop ? (contentHtml + connectorHtml) : (connectorHtml + contentHtml);
-        
-        container.appendChild(div);
-    });
-}
+            div.innerHTML = isTop ? (contentHtml + connectorHtml) : (connectorHtml + contentHtml);
+            container.appendChild(div);
+            checkLimit(div.querySelector('.description'));
+        });
+    }
+
     function checkLimit(el) {
         if(!el) return;
         const limit = parseInt(document.getElementById('limitSet').value);
@@ -327,9 +327,14 @@ function render() {
 
     function downloadPDF() {
         const area = document.getElementById('export-area');
+        const w = parseInt(document.getElementById('wSet').value);
+        const h = parseInt(document.getElementById('hSet').value);
+        
         html2pdf().set({
-            margin: 0, filename: 'zeitstrahl.pdf', html2canvas: { scale: 2 },
-            jsPDF: { unit: 'px', format: [parseInt(document.getElementById('wSet').value), parseInt(document.getElementById('hSet').value)], orientation: 'landscape' }
+            margin: 0, 
+            filename: 'zeitstrahl.pdf', 
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'px', format: [w, h], orientation: 'landscape' }
         }).from(area).save();
     }
 
@@ -342,6 +347,3 @@ function render() {
 </script>
 </body>
 </html>
-
-
-
