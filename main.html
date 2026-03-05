@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Zeitstrahl Generator</title>
+    <title>Zeitstrahl Generator Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { 
@@ -85,8 +85,8 @@
             position: absolute; width: 220px; transform: translateX(-50%); 
             display: flex; align-items: center; z-index: 10; transition: all 0.3s;
         }
-        .event.top { bottom: calc(45% + (var(--line-weight) / 2)); flex-direction: column; }
-        .event.bottom { top: calc(55% + (var(--line-weight) / 2)); flex-direction: column-reverse; }
+        .event.top { bottom: calc(45% + (var(--line-weight)/2)); flex-direction: column; }
+        .event.bottom { top: calc(55% + (var(--line-weight)/2)); flex-direction: column-reverse; }
 
         .connector { width: 2px; height: 60px; background: var(--line-color); cursor: pointer; position: relative; }
         
@@ -299,4 +299,3 @@
 </script>
 </body>
 </html>
-
