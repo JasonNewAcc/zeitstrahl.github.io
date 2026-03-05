@@ -18,7 +18,6 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* Präsentations-Modus */
         body.pres-mode { background: #111; overflow: hidden; }
         body.pres-mode .main-controls, body.pres-mode #settings-menu, body.pres-mode #header-editor { display: none !important; }
         
@@ -30,7 +29,6 @@
             box-shadow: 0 0 40px rgba(255,215,0,0.6);
         }
 
-        /* Controls */
         .main-controls {
             background: white; padding: 12px 20px; border-radius: 50px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -43,7 +41,6 @@
         .btn-add { background: #4472C4; color: white; }
         .btn-pres { background: #2c3e50; color: white; }
 
-        /* Header Editor */
         #header-editor {
             display: none; position: absolute; background: #222; color: white;
             padding: 10px; border-radius: 8px; gap: 10px; z-index: 2000;
@@ -51,7 +48,6 @@
         }
         #header-editor button, #header-editor input { background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
 
-        /* Settings Menu */
         #settings-menu {
             display: none; background: white; padding: 20px; border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2); margin-bottom: 15px;
@@ -60,7 +56,6 @@
         .setting-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
         .setting-group input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
 
-        /* Export Area */
         #export-area {
             background: white; padding: 60px 80px; position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.2);
@@ -80,21 +75,19 @@
             border-left: 25px solid var(--line-color);
         }
 
-        /* Container für Ereignisse FIX */
         #events-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 5;
         }
         #events-container * { pointer-events: auto; }
 
-        /* Events */
         .event { 
             position: absolute; width: 220px; transform: translateX(-50%); 
             display: flex; align-items: center; z-index: 10; transition: all 0.3s;
         }
-        .event.top { bottom: calc(45% + (var(--line-weight)/2)); flex-direction: column; }
-        .event.bottom { top: calc(55% + (var(--line-weight)/2)); flex-direction: column-reverse; }
+        /* Korrektur: Die Ereignisse docken jetzt basierend auf der 55% Linie an */
+        .event.top { top: auto; bottom: calc(45% + (var(--line-weight) / 2)); flex-direction: column; }
+        .event.bottom { bottom: auto; top: calc(55% + (var(--line-weight) / 2)); flex-direction: column-reverse; }
 
         .connector { width: 2px; height: 60px; background: var(--line-color); cursor: pointer; position: relative; }
         
@@ -245,8 +238,6 @@
         container.innerHTML = "";
         const showIcons = document.getElementById('allowIcons').checked;
         const width = parseInt(document.getElementById('wSet').value);
-        const limit = parseInt(document.getElementById('limitSet').value);
-        const hardStop = document.getElementById('hardStopSet').checked;
 
         eventsData.forEach((ev, i) => {
             const isTop = i % 2 === 0;
