@@ -81,10 +81,18 @@
         }
         #events-container * { pointer-events: auto; }
 
-        .event { 
-            position: absolute; width: 220px; transform: translateX(-50%); 
-            display: flex; align-items: center; z-index: 10; transition: all 0.3s;
-        }
+/* Ersetze das alte .event CSS hiermit */
+.event { 
+    position: absolute; 
+    width: 220px; 
+    /* transform: translateX(-50%); <-- Diese Zeile ENTFERNEN */
+    margin-left: -110px; /* Die Hälfte der Breite manuell setzen für PDF-Stabilität */
+    display: flex; 
+    align-items: center; 
+    z-index: 10; 
+    transition: all 0.3s;
+}
+        
         .event.top { bottom: calc(45% + (var(--line-weight)/2)); flex-direction: column; }
         .event.bottom { top: calc(55% + (var(--line-weight)/2)); flex-direction: column-reverse; }
 
@@ -232,47 +240,50 @@
         if(target) target.classList.add('focus-event');
     }
 
-    function render() {
-        const container = document.getElementById('events-container');
-        container.innerHTML = "";
-        const showIcons = document.getElementById('allowIcons').checked;
-        const width = parseInt(document.getElementById('wSet').value);
+function render() {
+    const container = document.getElementById('events-container');
+    container.innerHTML = "";
+    const showIcons = document.getElementById('allowIcons').checked;
+    const width = parseInt(document.getElementById('wSet').value);
+    const lineWeight = parseInt(document.getElementById('lineWeightSet').value);
 
-        // NEU: Puffer-Logik für besseres Aussehen
-        const paddingSide = 120; // Abstand von links (Start) und rechts (Pfeil)
-        const availableWidth = width - (paddingSide * 2);
+    const paddingSide = 120; 
+    const availableWidth = width - (paddingSide * 2);
 
-        eventsData.forEach((ev, i) => {
-            const isTop = i % 2 === 0;
-            
-            // Berechnung der X-Position mit Puffer
-            // Wenn nur 1 Event da ist, kommt es in die Mitte
-            let pos;
-            if (eventsData.length > 1) {
-                pos = paddingSide + (i / (eventsData.length - 1)) * availableWidth;
-            } else {
-                pos = width / 2;
-            }
+    eventsData.forEach((ev, i) => {
+        const isTop = i % 2 === 0;
+        let pos;
+        if (eventsData.length > 1) {
+            pos = paddingSide + (i / (eventsData.length - 1)) * availableWidth;
+        } else {
+            pos = width / 2;
+        }
 
-            const div = document.createElement('div');
-            div.className = `event ${isTop ? 'top' : 'bottom'}`;
-            div.id = `ev-dom-${i}`;
-            div.style.left = pos + "px";
-            
-            div.innerHTML = `
-                <div class="content-box">
-                    <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
-                    <div class="divider"></div>
-                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
-                </div>
-                <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
-                    ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
-                </div>
-            `;
-            container.appendChild(div);
-            checkLimit(div.querySelector('.description'));
-        });
-    }
+        const div = document.createElement('div');
+        div.className = `event ${isTop ? 'top' : 'bottom'}`;
+        div.id = `ev-dom-${i}`;
+        div.style.left = pos + "px";
+        
+        // Fix für vertikale Positionierung ohne komplexes Calc im Export
+        if(isTop) {
+            div.style.bottom = (45 + (lineWeight/2)) + "%";
+        } else {
+            div.style.top = (55 + (lineWeight/2)) + "%";
+        }
+        
+        div.innerHTML = `
+            <div class="content-box">
+                <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
+                <div class="divider"></div>
+                <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
+            </div>
+            <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
+                ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
 
     function checkLimit(el) {
         if(!el) return;
@@ -312,3 +323,4 @@
 </script>
 </body>
 </html>
+
