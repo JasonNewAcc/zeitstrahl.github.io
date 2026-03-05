@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Zeitstrahl Generator</title>
+    <title>Zeitstrahl Pro - Alle Einstellungen</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { 
@@ -18,15 +18,16 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
+        /* Präsentationsmodus */
         body.pres-mode { background: #111; overflow: hidden; }
         body.pres-mode .main-controls, body.pres-mode #settings-menu, body.pres-mode #header-editor { display: none !important; }
         
         .focus-event { 
             outline: 4px solid gold !important; 
-            transform: translateX(-50%) scale(1.3) !important; 
+            transform: translateX(-50%) scale(1.2) !important; 
             z-index: 1000 !important; 
-            background: white; border-radius: 10px; padding: 15px;
-            box-shadow: 0 0 40px rgba(255,215,0,0.6);
+            background: white; border-radius: 10px; padding: 10px;
+            box-shadow: 0 0 50px rgba(255,215,0,0.5);
         }
 
         .main-controls {
@@ -41,21 +42,20 @@
         .btn-add { background: #4472C4; color: white; }
         .btn-pres { background: #2c3e50; color: white; }
 
-        #header-editor {
-            display: none; position: absolute; background: #222; color: white;
-            padding: 10px; border-radius: 8px; gap: 10px; z-index: 2000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4); align-items: center;
-        }
-        #header-editor button, #header-editor input { background: #444; border: none; color: white; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
-
+        /* Settings & Editor Panels */
         #settings-menu {
             display: none; background: white; padding: 20px; border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2); margin-bottom: 15px;
             gap: 15px; flex-wrap: wrap; justify-content: center;
         }
         .setting-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
-        .setting-group input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        #header-editor {
+            display: none; position: absolute; background: #222; color: white;
+            padding: 10px; border-radius: 8px; gap: 10px; z-index: 2000;
+        }
 
+        /* Export Area */
         #export-area {
             background: white; padding: 60px 0; position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.2);
@@ -75,18 +75,13 @@
             border-left: 25px solid var(--line-color);
         }
 
-        #events-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 5;
-        }
-        #events-container * { pointer-events: auto; }
-
+        /* Event Styling & PDF Fix */
         .event { 
             position: absolute; width: 220px; transform: translateX(-50%); 
-            display: flex; align-items: center; z-index: 10; transition: all 0.3s;
+            display: flex; align-items: center; z-index: 10; transition: transform 0.3s;
         }
-        .event.top { bottom: 45%; padding-bottom: calc(var(--line-weight) / 2); flex-direction: column; }
-        .event.bottom { top: 55%; padding-top: calc(var(--line-weight) / 2); flex-direction: column-reverse; }
+        .event.top { bottom: 45%; flex-direction: column; padding-bottom: 2px; }
+        .event.bottom { top: 55%; flex-direction: column-reverse; padding-top: 2px; }
 
         .connector { width: 2px; height: 60px; background: var(--line-color); cursor: pointer; position: relative; }
         
@@ -94,26 +89,22 @@
             position: absolute; left: 50%; transform: translate(-50%, -50%);
             background: white; border: 2px solid var(--line-color); border-radius: 50%;
             width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-            font-size: 18px; z-index: 20;
+            font-size: 18px;
         }
-        .event.top .milestone-badge { bottom: -16px; }
-        .event.bottom .milestone-badge { top: -16px; }
 
         .content-box { text-align: center; width: 100%; }
         .year { font-size: var(--year-size); font-weight: bold; margin: 0; outline: none; }
         .divider { width: 30px; height: 3px; background: var(--line-color); margin: 8px auto; }
-        .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; border-radius: 4px; padding: 4px; }
-        .limit-exceeded { background: #fff1f1; border: 1px solid red; }
+        .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; padding: 4px; }
+        .limit-exceeded { background: #fff1f1; border: 1px solid red; border-radius: 4px; }
 
         #emoji-picker {
             display: none; position: absolute; background: white; border: 1px solid #ccc;
             padding: 10px; border-radius: 8px; z-index: 3000; grid-template-columns: repeat(4, 1fr); gap: 5px;
         }
-        .emoji-btn { cursor: pointer; font-size: 20px; padding: 5px; text-align: center; }
+        .emoji-btn { cursor: pointer; font-size: 20px; padding: 5px; }
 
         #footer-text { position: absolute; bottom: 20px; right: 40px; font-size: 12px; color: #999; }
-
-        @media print { .main-controls, #settings-menu, #header-editor, #emoji-picker { display: none !important; } }
     </style>
 </head>
 <body>
@@ -121,35 +112,30 @@
     <div class="main-controls">
         <input type="text" id="yearIn" class="input-box" placeholder="Jahr" style="width: 100px;">
         <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 220px;" onkeydown="if(event.key==='Enter') addEvent()">
-        <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
+        <button class="btn btn-add" onclick="addEvent()">+</button>
         <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
         <button class="btn btn-pres" onclick="togglePresentation()">Präsentation (P)</button>
-        <button class="btn" style="background:#6c757d; color:white" onclick="toggleSettings()">⚙️</button>
+        <button class="btn" onclick="toggleSettings()">⚙️</button>
     </div>
 
     <div id="settings-menu">
-        <div class="setting-group"><label>Symbole</label><input type="checkbox" id="allowIcons" checked onchange="render()"></div>
-        <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Icons</label><input type="checkbox" id="allowIcons" checked onchange="render()"></div>
+        <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:60px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:60px;" oninput="applyAllSettings()"></div></div>
         <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:4px;"><input type="number" id="yearSizeSet" value="26" style="width:45px;" oninput="applyAllSettings()"><input type="number" id="infoSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"></div></div>
         <div class="setting-group"><label>Linie Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="lineWeightSet" value="4" style="width:35px;" oninput="applyAllSettings()"></div></div>
-        <div class="setting-group"><label>Limit/Stopp</label><div style="display:flex;gap:4px;"><input type="number" id="limitSet" value="120" style="width:40px;" oninput="applyAllSettings()"><input type="checkbox" id="hardStopSet"></div></div>
-        <div class="setting-group"><label>Optionen</label><div style="display:flex; gap:10px;"><label><input type="checkbox" id="titleShowSet" checked onchange="applyAllSettings()"> Titel</label><label><input type="checkbox" id="footSet" checked onchange="applyAllSettings()"> Sig.</label></div></div>
+        <div class="setting-group"><label>Textlimit</label><input type="number" id="limitSet" value="120" style="width:50px;" oninput="applyAllSettings()"></div>
         <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
     </div>
 
     <div id="header-editor">
-        <input type="number" id="headSizeIn" value="40" style="width:50px" oninput="formatTitle('fontSize', this.value + 'px')">
-        <button onclick="formatTitle('underline')"><u>U</u></button>
-        <button onclick="formatTitle('justifyLeft')">⬅</button>
+        <button onclick="formatTitle('underline')">U</button>
         <button onclick="formatTitle('justifyCenter')">Center</button>
-        <button onclick="formatTitle('justifyRight')">➡</button>
     </div>
 
     <div id="emoji-picker">
         <span class="emoji-btn" onclick="setEmoji('')">❌</span>
         <span class="emoji-btn" onclick="setEmoji('👑')">👑</span><span class="emoji-btn" onclick="setEmoji('⚔️')">⚔️</span>
         <span class="emoji-btn" onclick="setEmoji('💡')">💡</span><span class="emoji-btn" onclick="setEmoji('📜')">📜</span>
-        <span class="emoji-btn" onclick="setEmoji('🔥')">🔥</span><span class="emoji-btn" onclick="setEmoji('🌍')">🌍</span>
     </div>
 
     <div id="export-area">
@@ -177,10 +163,7 @@
         editor.style.top = (rect.bottom + window.scrollY + 5) + 'px';
     }
 
-    function formatTitle(cmd, val = null) {
-        if(cmd === 'fontSize') document.getElementById('title-el').style.fontSize = val;
-        else document.execCommand(cmd, false, val);
-    }
+    function formatTitle(cmd) { document.execCommand(cmd, false, null); }
 
     function applyAllSettings() {
         const area = document.getElementById('export-area');
@@ -190,8 +173,6 @@
         document.documentElement.style.setProperty('--info-size', document.getElementById('infoSizeSet').value + "px");
         document.documentElement.style.setProperty('--line-color', document.getElementById('lineColorSet').value);
         document.documentElement.style.setProperty('--line-weight', document.getElementById('lineWeightSet').value + "px");
-        document.getElementById('title-el').style.display = document.getElementById('titleShowSet').checked ? 'block' : 'none';
-        document.getElementById('footer-text').style.display = document.getElementById('footSet').checked ? 'block' : 'none';
         render();
     }
 
@@ -199,41 +180,22 @@
         const y = document.getElementById('yearIn'), d = document.getElementById('descIn');
         if(!y.value || !d.value) return;
         eventsData.push({ year: y.value, desc: d.value, icon: '' });
-        y.value=""; d.value=""; y.focus();
+        y.value=""; d.value="";
         render();
     }
 
     function sortEvents() {
-        eventsData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
+        eventsData.sort((a, b) => parseInt(a.year.replace(/\D/g,'')) - parseInt(b.year.replace(/\D/g,'')));
         render();
-    }
-
-    function togglePresentation() {
-        document.body.classList.toggle('pres-mode');
-        presIdx = -1;
-        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if(e.key.toLowerCase() === 'p') togglePresentation();
-        if(!document.body.classList.contains('pres-mode')) return;
-        if(e.key === 'ArrowRight') { presIdx = Math.min(presIdx + 1, eventsData.length - 1); updateFocus(); }
-        if(e.key === 'ArrowLeft') { presIdx = Math.max(presIdx - 1, 0); updateFocus(); }
-    });
-
-    function updateFocus() {
-        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
-        const target = document.querySelector(`#ev-dom-${presIdx}`);
-        if(target) target.classList.add('focus-event');
     }
 
     function render() {
         const container = document.getElementById('events-container');
         container.innerHTML = "";
-        const showIcons = document.getElementById('allowIcons').checked;
         const width = parseInt(document.getElementById('wSet').value);
+        const limit = parseInt(document.getElementById('limitSet').value);
 
-        // PUFFER: Damit die Striche in der PDF nicht am Rand kleben
+        // PUFFER: Damit die Striche nach rechts/links rücken
         const paddingSide = 150; 
         const availableWidth = width - (paddingSide * 2);
 
@@ -250,22 +212,14 @@
                 <div class="content-box">
                     <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
                     <div class="divider"></div>
-                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
+                    <div class="description ${ev.desc.length > limit ? 'limit-exceeded' : ''}" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText">${ev.desc}</div>
                 </div>
                 <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
-                    ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
+                    ${(document.getElementById('allowIcons').checked && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
                 </div>
             `;
             container.appendChild(div);
-            checkLimit(div.querySelector('.description'));
         });
-    }
-
-    function checkLimit(el) {
-        if(!el) return;
-        const limit = parseInt(document.getElementById('limitSet').value);
-        if(el.innerText.length > limit) el.classList.add('limit-exceeded');
-        else el.classList.remove('limit-exceeded');
     }
 
     function openEmojiPicker(e, idx) {
@@ -279,23 +233,32 @@
         document.getElementById('emoji-picker').style.display = 'none';
     }
 
+    function togglePresentation() {
+        document.body.classList.toggle('pres-mode');
+        presIdx = -1;
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if(!document.body.classList.contains('pres-mode')) return;
+        if(e.key === 'ArrowRight') { presIdx = Math.min(presIdx + 1, eventsData.length - 1); updateFocus(); }
+        if(e.key === 'ArrowLeft') { presIdx = Math.max(presIdx - 1, 0); updateFocus(); }
+    });
+
+    function updateFocus() {
+        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
+        document.getElementById(`ev-dom-${presIdx}`).classList.add('focus-event');
+    }
+
     function downloadPDF() {
         const area = document.getElementById('export-area');
         const w = parseInt(document.getElementById('wSet').value);
         const h = parseInt(document.getElementById('hSet').value);
-        
         html2pdf().set({
-            margin: 0,
-            filename: 'zeitstrahl.pdf',
-            html2canvas: { scale: 2, useCORS: true },
+            margin: 0, filename: 'zeitstrahl.pdf',
+            html2canvas: { scale: 2 },
             jsPDF: { unit: 'px', format: [w, h], orientation: 'landscape' }
         }).from(area).save();
     }
-
-    document.addEventListener('mousedown', (e) => {
-        if(!e.target.closest('#header-editor') && !e.target.closest('#title-el')) document.getElementById('header-editor').style.display = 'none';
-        if(!e.target.closest('#emoji-picker')) document.getElementById('emoji-picker').style.display = 'none';
-    });
 
     applyAllSettings();
 </script>
