@@ -232,9 +232,6 @@
         if(target) target.classList.add('focus-event');
     }
 
-    <script>
-    // ... (vorherige Funktionen bleiben gleich) ...
-
     function render() {
         const container = document.getElementById('events-container');
         container.innerHTML = "";
@@ -276,9 +273,6 @@
             checkLimit(div.querySelector('.description'));
         });
     }
-
-    // ... (Rest des Scripts bleibt gleich) ...
-</script>
 
     function checkLimit(el) {
         if(!el) return;
