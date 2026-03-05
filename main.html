@@ -80,6 +80,14 @@
             border-left: 25px solid var(--line-color);
         }
 
+        /* Container für Ereignisse FIX */
+        #events-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5;
+        }
+        #events-container * { pointer-events: auto; }
+
         /* Events */
         .event { 
             position: absolute; width: 220px; transform: translateX(-50%); 
@@ -264,6 +272,7 @@
     }
 
     function checkLimit(el) {
+        if(!el) return;
         const limit = parseInt(document.getElementById('limitSet').value);
         const hardStop = document.getElementById('hardStopSet').checked;
         if(el.innerText.length > limit) {
