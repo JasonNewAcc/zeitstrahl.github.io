@@ -84,11 +84,13 @@
 .event { 
     position: absolute; 
     width: 220px; 
-    margin-left: -110px; /* Zentriert das Element exakt über dem Punkt */
+    margin-left: -110px; 
     display: flex; 
     flex-direction: column; 
     align-items: center; 
     z-index: 10;
+    /* Verhindert, dass Browser Abstände hinzufügen */
+    padding: 0;
 }
 
 /* Wir entfernen die automatische Flex-Umkehrung, da wir die Position per JS festlegen */
@@ -100,7 +102,9 @@
     height: 60px; 
     background: var(--line-color); 
     position: relative; 
-    flex-shrink: 0;
+    /* Sorgt dafür, dass die Linie nicht gestaucht wird */
+    flex-shrink: 0; 
+    margin: 0;
 }
         
         .milestone-badge {
@@ -112,7 +116,13 @@
         .event.top .milestone-badge { top: 50%; }
         .event.bottom .milestone-badge { bottom: 50%; }
 
-        .content-box { text-align: center; width: 100%; }
+.content-box { 
+    text-align: center; 
+    width: 100%;
+    /* Verhindert zusätzliche Abstände nach unten/oben */
+    display: block; 
+    margin: 0;
+}
         .year { font-size: var(--year-size); font-weight: bold; margin: 0; outline: none; }
         .divider { width: 30px; height: 3px; background: var(--line-color); margin: 8px auto; }
         .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; border-radius: 4px; padding: 4px; }
@@ -332,5 +342,6 @@ function render() {
 </script>
 </body>
 </html>
+
 
 
