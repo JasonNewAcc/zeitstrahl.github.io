@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Zeitstrahl Pro - Alle Einstellungen</title>
+    <title>Zeitstrahl Generator Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { 
@@ -13,129 +13,194 @@
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #cbd2d9; margin: 0; padding: 20px;
             display: flex; flex-direction: column; align-items: center;
+            transition: background 0.3s;
         }
 
-        /* Präsentationsmodus */
+        /* Präsentationsmodus Styles */
         body.pres-mode { background: #111; overflow: hidden; }
-        body.pres-mode .main-controls, body.pres-mode #settings-menu, body.pres-mode #header-editor { display: none !important; }
+        body.pres-mode .main-controls, 
+        body.pres-mode #settings-menu, 
+        body.pres-mode #header-editor,
+        body.pres-mode #emoji-picker { display: none !important; }
         
         .focus-event { 
             outline: 4px solid gold !important; 
-            transform: translateX(-50%) scale(1.2) !important; 
+            transform: translateX(-50%) scale(1.3) !important; 
             z-index: 1000 !important; 
-            background: white; border-radius: 10px; padding: 10px;
-            box-shadow: 0 0 50px rgba(255,215,0,0.5);
+            background: white; border-radius: 10px; padding: 15px;
+            box-shadow: 0 0 40px rgba(255,215,0,0.6);
         }
 
+        /* UI Elemente */
         .main-controls {
-            background: white; padding: 12px 20px; border-radius: 50px;
+            background: white; padding: 12px 25px; border-radius: 50px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            display: flex; gap: 10px; align-items: center;
-            margin-bottom: 15px; position: sticky; top: 10px; z-index: 1000;
+            display: flex; gap: 12px; align-items: center;
+            margin-bottom: 20px; position: sticky; top: 10px; z-index: 1000;
         }
 
-        .input-box { padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
-        .btn { padding: 8px 18px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .input-box { 
+            padding: 10px 18px; border: 1px solid #ddd; 
+            border-radius: 25px; outline: none; font-size: 14px;
+            transition: border 0.2s;
+        }
+        .input-box:focus { border-color: var(--line-color); }
+
+        .btn { 
+            padding: 10px 20px; border: none; border-radius: 25px; 
+            cursor: pointer; font-weight: bold; transition: all 0.2s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn:active { transform: translateY(0); }
         .btn-add { background: #4472C4; color: white; }
         .btn-pres { background: #2c3e50; color: white; }
 
-        /* Settings & Editor Panels */
-        #settings-menu {
-            display: none; background: white; padding: 20px; border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2); margin-bottom: 15px;
-            gap: 15px; flex-wrap: wrap; justify-content: center;
-        }
-        .setting-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
-        
+        /* Erweiterte Editoren */
         #header-editor {
             display: none; position: absolute; background: #222; color: white;
-            padding: 10px; border-radius: 8px; gap: 10px; z-index: 2000;
+            padding: 12px; border-radius: 10px; gap: 10px; z-index: 2000;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4); align-items: center;
+        }
+        #header-editor button { 
+            background: #444; border: none; color: white; 
+            padding: 6px 12px; cursor: pointer; border-radius: 5px; 
         }
 
-        /* Export Area */
+        #settings-menu {
+            display: none; background: white; padding: 25px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 20px;
+            gap: 20px; flex-wrap: wrap; justify-content: center;
+            border: 1px solid #eee;
+        }
+        .setting-group { display: flex; flex-direction: column; gap: 5px; }
+        .setting-group label { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; }
+
+        /* Zeichenbereich (Export Area) */
         #export-area {
-            background: white; padding: 60px 0; position: relative;
-            box-shadow: 0 0 50px rgba(0,0,0,0.2);
-            width: 1100px; height: 650px; box-sizing: border-box; overflow: hidden;
+            background: white; padding: 80px 0; position: relative;
+            box-shadow: 0 0 60px rgba(0,0,0,0.15);
+            width: 1100px; height: 700px; box-sizing: border-box; overflow: hidden;
+            transition: width 0.3s, height 0.3s;
         }
 
-        #title-el { font-size: 2.5em; margin-bottom: 30px; outline: none; text-align: center; }
+        #title-el { 
+            font-size: 3em; margin: 0 0 40px 0; outline: none; 
+            text-align: center; cursor: text; min-height: 1.2em;
+        }
         
+        /* Die Zeitstrahl-Linie */
         .main-timeline-line { 
-            position: absolute; top: 55%; left: 80px; right: 100px; 
+            position: absolute; top: 55%; left: 100px; right: 120px; 
             height: var(--line-weight); background: var(--line-color); 
-            z-index: 1;
+            z-index: 1; border-radius: 2px;
         }
         .main-timeline-line::after {
-            content: ''; position: absolute; right: -25px; top: 50%; transform: translateY(-50%);
-            border-top: 15px solid transparent; border-bottom: 15px solid transparent;
-            border-left: 25px solid var(--line-color);
+            content: ''; position: absolute; right: -30px; top: 50%; transform: translateY(-50%);
+            border-top: 18px solid transparent; border-bottom: 18px solid transparent;
+            border-left: 32px solid var(--line-color);
         }
 
-        /* Event Styling & PDF Fix */
+        /* Container für Events */
+        #events-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5;
+        }
+        #events-container * { pointer-events: auto; }
+
+        /* Event Struktur */
         .event { 
-            position: absolute; width: 220px; transform: translateX(-50%); 
-            display: flex; align-items: center; z-index: 10; transition: transform 0.3s;
+            position: absolute; width: 240px; transform: translateX(-50%); 
+            display: flex; align-items: center; z-index: 10; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .event.top { bottom: 45%; flex-direction: column; padding-bottom: 2px; }
-        .event.bottom { top: 55%; flex-direction: column-reverse; padding-top: 2px; }
+        /* FIXED: Stabile Verankerung für PDF */
+        .event.top { bottom: 45%; flex-direction: column; padding-bottom: calc(var(--line-weight) / 2); }
+        .event.bottom { top: 55%; flex-direction: column-reverse; padding-top: calc(var(--line-weight) / 2); }
 
-        .connector { width: 2px; height: 60px; background: var(--line-color); cursor: pointer; position: relative; }
+        .connector { 
+            width: 2px; height: 70px; background: var(--line-color); 
+            cursor: pointer; position: relative; transition: width 0.2s;
+        }
+        .connector:hover { width: 4px; }
         
         .milestone-badge {
             position: absolute; left: 50%; transform: translate(-50%, -50%);
-            background: white; border: 2px solid var(--line-color); border-radius: 50%;
-            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
+            background: white; border: 2.5px solid var(--line-color); border-radius: 50%;
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+        .event.top .milestone-badge { bottom: -18px; }
+        .event.bottom .milestone-badge { top: -18px; }
 
-        .content-box { text-align: center; width: 100%; }
-        .year { font-size: var(--year-size); font-weight: bold; margin: 0; outline: none; }
-        .divider { width: 30px; height: 3px; background: var(--line-color); margin: 8px auto; }
-        .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; padding: 4px; }
-        .limit-exceeded { background: #fff1f1; border: 1px solid red; border-radius: 4px; }
+        .content-box { text-align: center; width: 100%; padding: 0 10px; }
+        .year { font-size: var(--year-size); font-weight: 800; margin: 0; outline: none; color: #222; }
+        .divider { width: 40px; height: 4px; background: var(--line-color); margin: 10px auto; border-radius: 2px; }
+        .description { 
+            font-size: var(--info-size); margin: 0; outline: none; 
+            line-height: 1.5; border-radius: 6px; padding: 6px; color: #444;
+        }
+        .limit-exceeded { background: #fff1f1; border: 2px solid #ff4444; color: #b00; }
 
+        /* Emoji Picker Panel */
         #emoji-picker {
-            display: none; position: absolute; background: white; border: 1px solid #ccc;
-            padding: 10px; border-radius: 8px; z-index: 3000; grid-template-columns: repeat(4, 1fr); gap: 5px;
+            display: none; position: absolute; background: white; border: 1px solid #ddd;
+            padding: 12px; border-radius: 12px; z-index: 3000; 
+            grid-template-columns: repeat(5, 1fr); gap: 8px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
-        .emoji-btn { cursor: pointer; font-size: 20px; padding: 5px; }
+        .emoji-btn { 
+            cursor: pointer; font-size: 24px; padding: 8px; text-align: center; 
+            border-radius: 8px; transition: background 0.2s;
+        }
+        .emoji-btn:hover { background: #f0f0f0; }
 
-        #footer-text { position: absolute; bottom: 20px; right: 40px; font-size: 12px; color: #999; }
+        #footer-text { 
+            position: absolute; bottom: 25px; right: 45px; 
+            font-size: 13px; color: #bbb; font-weight: 500;
+        }
+
+        @media print { .main-controls, #settings-menu, #header-editor, #emoji-picker { display: none !important; } }
     </style>
 </head>
 <body>
 
     <div class="main-controls">
-        <input type="text" id="yearIn" class="input-box" placeholder="Jahr" style="width: 100px;">
-        <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 220px;" onkeydown="if(event.key==='Enter') addEvent()">
-        <button class="btn btn-add" onclick="addEvent()">+</button>
-        <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
-        <button class="btn btn-pres" onclick="togglePresentation()">Präsentation (P)</button>
-        <button class="btn" onclick="toggleSettings()">⚙️</button>
+        <input type="text" id="yearIn" class="input-box" placeholder="Jahr (z.B. 1789)" style="width: 110px;">
+        <input type="text" id="descIn" class="input-box" placeholder="Was ist passiert?" style="width: 250px;" onkeydown="if(event.key==='Enter') addEvent()">
+        <button class="btn btn-add" onclick="addEvent()">✨ Hinzufügen</button>
+        <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">📅 Sortieren</button>
+        <button class="btn btn-pres" onclick="togglePresentation()">📽️ Präsentation (P)</button>
+        <button class="btn" style="background:#6c757d; color:white" onclick="toggleSettings()">🛠️</button>
     </div>
 
     <div id="settings-menu">
         <div class="setting-group"><label>Icons</label><input type="checkbox" id="allowIcons" checked onchange="render()"></div>
-        <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:60px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:60px;" oninput="applyAllSettings()"></div></div>
-        <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:4px;"><input type="number" id="yearSizeSet" value="26" style="width:45px;" oninput="applyAllSettings()"><input type="number" id="infoSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"></div></div>
-        <div class="setting-group"><label>Linie Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="lineWeightSet" value="4" style="width:35px;" oninput="applyAllSettings()"></div></div>
-        <div class="setting-group"><label>Textlimit</label><input type="number" id="limitSet" value="120" style="width:50px;" oninput="applyAllSettings()"></div>
-        <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
+        <div class="setting-group"><label>Format (Px)</label><div style="display:flex;gap:5px;"><input type="number" id="wSet" value="1100" style="width:65px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="700" style="width:65px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Schriftgröße</label><div style="display:flex;gap:5px;"><input type="number" id="yearSizeSet" value="26" style="width:50px;" oninput="applyAllSettings()"><input type="number" id="infoSizeSet" value="16" style="width:50px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Linie</label><div style="display:flex;gap:5px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="lineWeightSet" value="4" style="width:40px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Textlimit</label><input type="number" id="limitSet" value="150" style="width:60px;" oninput="applyAllSettings()"></div>
+        <div class="setting-group"><label>Anzeige</label><div style="display:flex; gap:10px;"><label><input type="checkbox" id="titleShowSet" checked onchange="applyAllSettings()"> Titel</label><label><input type="checkbox" id="footSet" checked onchange="applyAllSettings()"> Signatur</label></div></div>
+        <button class="btn" style="background:#28a745; color:white; margin-left: 10px;" onclick="downloadPDF()">📥 PDF Export</button>
     </div>
 
     <div id="header-editor">
-        <button onclick="formatTitle('underline')">U</button>
+        <input type="number" id="headSizeIn" value="48" style="width:55px; background: #333; color: white; border: 1px solid #555;" oninput="formatTitle('fontSize', this.value + 'px')">
+        <button onclick="formatTitle('underline')"><u>U</u></button>
+        <button onclick="formatTitle('justifyLeft')">⬅</button>
         <button onclick="formatTitle('justifyCenter')">Center</button>
+        <button onclick="formatTitle('justifyRight')">➡</button>
     </div>
 
     <div id="emoji-picker">
-        <span class="emoji-btn" onclick="setEmoji('')">❌</span>
+        <span class="emoji-btn" onclick="setEmoji('')">🚫</span>
         <span class="emoji-btn" onclick="setEmoji('👑')">👑</span><span class="emoji-btn" onclick="setEmoji('⚔️')">⚔️</span>
         <span class="emoji-btn" onclick="setEmoji('💡')">💡</span><span class="emoji-btn" onclick="setEmoji('📜')">📜</span>
+        <span class="emoji-btn" onclick="setEmoji('🔥')">🔥</span><span class="emoji-btn" onclick="setEmoji('🌍')">🌍</span>
+        <span class="emoji-btn" onclick="setEmoji('🎨')">🎨</span><span class="emoji-btn" onclick="setEmoji('⚖️')">⚖️</span>
+        <span class="emoji-btn" onclick="setEmoji('🚀')">🚀</span>
     </div>
 
     <div id="export-area">
@@ -152,7 +217,7 @@
 
     function toggleSettings() {
         const s = document.getElementById('settings-menu');
-        s.style.display = s.style.display === 'flex' ? 'none' : 'flex';
+        s.style.display = (s.style.display === 'flex') ? 'none' : 'flex';
     }
 
     function showTitleEditor(e) {
@@ -160,10 +225,13 @@
         const rect = e.target.getBoundingClientRect();
         editor.style.display = 'flex';
         editor.style.left = rect.left + 'px';
-        editor.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        editor.style.top = (rect.bottom + window.scrollY + 10) + 'px';
     }
 
-    function formatTitle(cmd) { document.execCommand(cmd, false, null); }
+    function formatTitle(cmd, val = null) {
+        if(cmd === 'fontSize') document.getElementById('title-el').style.fontSize = val;
+        else document.execCommand(cmd, false, val);
+    }
 
     function applyAllSettings() {
         const area = document.getElementById('export-area');
@@ -173,53 +241,93 @@
         document.documentElement.style.setProperty('--info-size', document.getElementById('infoSizeSet').value + "px");
         document.documentElement.style.setProperty('--line-color', document.getElementById('lineColorSet').value);
         document.documentElement.style.setProperty('--line-weight', document.getElementById('lineWeightSet').value + "px");
+        document.getElementById('title-el').style.display = document.getElementById('titleShowSet').checked ? 'block' : 'none';
+        document.getElementById('footer-text').style.display = document.getElementById('footSet').checked ? 'block' : 'none';
         render();
+    }
+
+    function parseYear(val) {
+        let str = val.toString().toLowerCase().trim();
+        let num = parseInt(str.replace(/[^0-9-]/g, ''));
+        if (isNaN(num)) return 0;
+        return (str.includes('v.') || str.includes('vor')) ? -Math.abs(num) : num;
     }
 
     function addEvent() {
         const y = document.getElementById('yearIn'), d = document.getElementById('descIn');
         if(!y.value || !d.value) return;
-        eventsData.push({ year: y.value, desc: d.value, icon: '' });
-        y.value=""; d.value="";
+        eventsData.push({ id: Date.now(), year: y.value, desc: d.value, icon: '' });
+        y.value=""; d.value=""; y.focus();
         render();
     }
 
     function sortEvents() {
-        eventsData.sort((a, b) => parseInt(a.year.replace(/\D/g,'')) - parseInt(b.year.replace(/\D/g,'')));
+        eventsData.sort((a, b) => parseYear(a.year) - parseYear(b.year));
         render();
+    }
+
+    function togglePresentation() {
+        document.body.classList.toggle('pres-mode');
+        presIdx = -1;
+        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if(e.key.toLowerCase() === 'p') togglePresentation();
+        if(!document.body.classList.contains('pres-mode')) return;
+        if(e.key === 'ArrowRight') { presIdx = Math.min(presIdx + 1, eventsData.length - 1); updateFocus(); }
+        if(e.key === 'ArrowLeft') { presIdx = Math.max(presIdx - 1, 0); updateFocus(); }
+        if(e.key === 'Escape') togglePresentation();
+    });
+
+    function updateFocus() {
+        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
+        const target = document.querySelector(`#ev-dom-${presIdx}`);
+        if(target) {
+            target.classList.add('focus-event');
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 
     function render() {
         const container = document.getElementById('events-container');
         container.innerHTML = "";
+        const showIcons = document.getElementById('allowIcons').checked;
         const width = parseInt(document.getElementById('wSet').value);
-        const limit = parseInt(document.getElementById('limitSet').value);
-
-        // PUFFER: Damit die Striche nach rechts/links rücken
-        const paddingSide = 150; 
-        const availableWidth = width - (paddingSide * 2);
+        
+        // Stabile Positionierung: 150px Rand links/rechts
+        const padding = 150;
+        const drawWidth = width - (padding * 2);
 
         eventsData.forEach((ev, i) => {
             const isTop = i % 2 === 0;
-            const xPos = eventsData.length > 1 ? paddingSide + (i / (eventsData.length - 1)) * availableWidth : width/2;
+            const pos = eventsData.length > 1 ? padding + (i / (eventsData.length - 1)) * drawWidth : width/2;
             
             const div = document.createElement('div');
             div.className = `event ${isTop ? 'top' : 'bottom'}`;
             div.id = `ev-dom-${i}`;
-            div.style.left = xPos + "px";
+            div.style.left = pos + "px";
             
             div.innerHTML = `
                 <div class="content-box">
                     <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
                     <div class="divider"></div>
-                    <div class="description ${ev.desc.length > limit ? 'limit-exceeded' : ''}" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText">${ev.desc}</div>
+                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
                 </div>
                 <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
-                    ${(document.getElementById('allowIcons').checked && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
+                    ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
                 </div>
             `;
             container.appendChild(div);
+            checkLimit(div.querySelector('.description'));
         });
+    }
+
+    function checkLimit(el) {
+        if(!el) return;
+        const limit = parseInt(document.getElementById('limitSet').value);
+        if(el.innerText.length > limit) el.classList.add('limit-exceeded');
+        else el.classList.remove('limit-exceeded');
     }
 
     function openEmojiPicker(e, idx) {
@@ -233,33 +341,27 @@
         document.getElementById('emoji-picker').style.display = 'none';
     }
 
-    function togglePresentation() {
-        document.body.classList.toggle('pres-mode');
-        presIdx = -1;
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if(!document.body.classList.contains('pres-mode')) return;
-        if(e.key === 'ArrowRight') { presIdx = Math.min(presIdx + 1, eventsData.length - 1); updateFocus(); }
-        if(e.key === 'ArrowLeft') { presIdx = Math.max(presIdx - 1, 0); updateFocus(); }
-    });
-
-    function updateFocus() {
-        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
-        document.getElementById(`ev-dom-${presIdx}`).classList.add('focus-event');
-    }
-
     function downloadPDF() {
         const area = document.getElementById('export-area');
         const w = parseInt(document.getElementById('wSet').value);
         const h = parseInt(document.getElementById('hSet').value);
-        html2pdf().set({
-            margin: 0, filename: 'zeitstrahl.pdf',
-            html2canvas: { scale: 2 },
+        
+        const opt = {
+            margin: 0,
+            filename: 'zeitstrahl-export.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
             jsPDF: { unit: 'px', format: [w, h], orientation: 'landscape' }
-        }).from(area).save();
+        };
+        html2pdf().set(opt).from(area).save();
     }
 
+    document.addEventListener('mousedown', (e) => {
+        if(!e.target.closest('#header-editor') && !e.target.closest('#title-el')) document.getElementById('header-editor').style.display = 'none';
+        if(!e.target.closest('#emoji-picker')) document.getElementById('emoji-picker').style.display = 'none';
+    });
+
+    // Start-Setup
     applyAllSettings();
 </script>
 </body>
