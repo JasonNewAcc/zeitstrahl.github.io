@@ -2,14 +2,14 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Zeitstrahl Generator</title>
+    <title>Zeitstrahl Generator Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { 
             --line-color: #4472C4; 
             --line-weight: 4px; 
-            --year-size: 26px;
-            --info-size: 16px;
+            --year-size: 1.5em;
+            --info-size: 0.9em;
         }
 
         body {
@@ -56,16 +56,14 @@
         .setting-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
         .setting-group input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
 
-        /* FIX: Stabiler Container für Export */
         #export-area {
             background: white; padding: 60px 80px; position: relative;
             box-shadow: 0 0 50px rgba(0,0,0,0.2);
-            width: 1100px; height: 650px; box-sizing: border-box; overflow: hidden;
+            width: 1100px; min-height: 650px; box-sizing: border-box; overflow: visible;
         }
 
-        #title-el { font-size: 2.5em; margin-bottom: 30px; outline: none; text-align: center; }
+        #title-el { font-size: 2.5em; margin-bottom: 30px; outline: none; }
         
-        /* FIX: Die Linie bleibt als Kind von export-area stabil */
         .main-timeline-line { 
             position: absolute; top: 55%; left: 80px; right: 100px; 
             height: var(--line-weight); background: var(--line-color); 
@@ -87,9 +85,8 @@
             position: absolute; width: 220px; transform: translateX(-50%); 
             display: flex; align-items: center; z-index: 10; transition: all 0.3s;
         }
-        /* FIX: Präzises Docking an die 55% Linie */
-        .event.top { bottom: 45%; padding-bottom: calc(var(--line-weight) / 2); flex-direction: column; }
-        .event.bottom { top: 55%; padding-top: calc(var(--line-weight) / 2); flex-direction: column-reverse; }
+        .event.top { bottom: calc(45% + (var(--line-weight)/2)); flex-direction: column; }
+        .event.bottom { top: calc(55% + (var(--line-weight)/2)); flex-direction: column-reverse; }
 
         .connector { width: 2px; height: 60px; background: var(--line-color); cursor: pointer; position: relative; }
         
@@ -99,8 +96,8 @@
             width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
             font-size: 18px; z-index: 20;
         }
-        .event.top .milestone-badge { bottom: -16px; }
-        .event.bottom .milestone-badge { top: -16px; }
+        .event.top .milestone-badge { top: 50%; }
+        .event.bottom .milestone-badge { bottom: 50%; }
 
         .content-box { text-align: center; width: 100%; }
         .year { font-size: var(--year-size); font-weight: bold; margin: 0; outline: none; }
@@ -120,7 +117,7 @@
 <body>
 
     <div class="main-controls">
-        <input type="text" id="yearIn" class="input-box" placeholder="Jahr" style="width: 100px;">
+        <input type="text" id="yearIn" class="input-box" placeholder="Jahr (v. Chr.)" style="width: 120px;">
         <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 220px;" onkeydown="if(event.key==='Enter') addEvent()">
         <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
         <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
@@ -157,7 +154,7 @@
         <h1 id="title-el" contenteditable="true" onfocus="showTitleEditor(event)">Mein Zeitstrahl</h1>
         <div class="main-timeline-line"></div>
         <div id="events-container"></div>
-        <div id="footer-text" style="position:absolute; bottom:20px; right:40px; font-size:12px; color:#999;">erstellt mit jasonnewacc.github.io/zeitstrahl</div>
+        <div id="footer-text" style="position:absolute; bottom:20px; right:40px; font-size:12px; color:#999;">erstellt mit https://jasonnewacc.github.io/zeitstrahl.github.io/main</div>
     </div>
 
 <script>
@@ -235,17 +232,31 @@
         if(target) target.classList.add('focus-event');
     }
 
+    <script>
+    // ... (vorherige Funktionen bleiben gleich) ...
+
     function render() {
         const container = document.getElementById('events-container');
         container.innerHTML = "";
         const showIcons = document.getElementById('allowIcons').checked;
-        const width = parseInt(document.getElementById('wSet').value) - 180; // Puffer für Pfeil und Start
+        const width = parseInt(document.getElementById('wSet').value);
+
+        // NEU: Puffer-Logik für besseres Aussehen
+        const paddingSide = 120; // Abstand von links (Start) und rechts (Pfeil)
+        const availableWidth = width - (paddingSide * 2);
 
         eventsData.forEach((ev, i) => {
             const isTop = i % 2 === 0;
-            // FIX: Berechnung der X-Position basierend auf dem Export-Container
-            const pos = eventsData.length > 1 ? (i / (eventsData.length - 1)) * width + 80 : 80;
             
+            // Berechnung der X-Position mit Puffer
+            // Wenn nur 1 Event da ist, kommt es in die Mitte
+            let pos;
+            if (eventsData.length > 1) {
+                pos = paddingSide + (i / (eventsData.length - 1)) * availableWidth;
+            } else {
+                pos = width / 2;
+            }
+
             const div = document.createElement('div');
             div.className = `event ${isTop ? 'top' : 'bottom'}`;
             div.id = `ev-dom-${i}`;
@@ -265,6 +276,9 @@
             checkLimit(div.querySelector('.description'));
         });
     }
+
+    // ... (Rest des Scripts bleibt gleich) ...
+</script>
 
     function checkLimit(el) {
         if(!el) return;
@@ -289,14 +303,9 @@
 
     function downloadPDF() {
         const area = document.getElementById('export-area');
-        const w = parseInt(document.getElementById('wSet').value);
-        const h = parseInt(document.getElementById('hSet').value);
-        
         html2pdf().set({
-            margin: 0,
-            filename: 'zeitstrahl.pdf',
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'px', format: [w, h], orientation: 'landscape' }
+            margin: 0, filename: 'zeitstrahl.pdf', html2canvas: { scale: 2 },
+            jsPDF: { unit: 'px', format: [parseInt(document.getElementById('wSet').value), parseInt(document.getElementById('hSet').value)], orientation: 'landscape' }
         }).from(area).save();
     }
 
