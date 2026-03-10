@@ -136,15 +136,27 @@
 </head>
 <body>
 
-    <div class="main-controls">
-        <input type="text" id="yearIn" class="input-box" placeholder="Jahr (v. Chr.)" style="width: 120px;">
-        <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 220px;" onkeydown="if(event.key==='Enter') addEvent()">
-        <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
-        <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
-        <button class="btn btn-pres" onclick="togglePresentation()">Präsentation (P)</button>
-        <button class="btn" style="background:#6c757d; color:white" onclick="toggleSettings()">⚙️</button>
-        <button class="btn" style="background:#6c757d; color:white" placeholder="Kommt Bald!">Mind Map (Kommt Bald!)</button>
-    </div>
+<div class="main-controls">
+    <span style="color: #555; font-weight: bold; margin-right: 5px;">Andere Tools:</span>
+    
+    <button class="btn" 
+            style="background:#cc545e; color:white; min-width: 100px;" 
+            onmouseover="this.innerText='Kommt Bald!'" 
+            onmouseout="this.innerText='Mind Map'">
+            Mind Map
+    </button>
+
+    <span style="border-left: 2px solid #ccc; margin: 0 15px; height: 20px; display: inline-block; vertical-align: middle;"></span>
+
+    <input type="text" id="yearIn" class="input-box" placeholder="Jahr (v. Chr.)" style="width: 120px;">
+    <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 220px;" onkeydown="if(event.key==='Enter') addEvent()">
+    
+    <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
+    <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
+    <button class="btn btn-pres" onclick="togglePresentation()">Präsentation (P)</button>
+    <button class="btn" style="background:#6c757d; color:white" onclick="toggleSettings()">⚙️</button>
+
+</div>
 
     <div id="settings-menu">
         <div class="setting-group"><label>Symbole</label><input type="checkbox" id="allowIcons" checked onchange="render()"></div>
