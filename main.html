@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <title>Zeitstrahl Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
     <style>
         :root { 
             --line-color: #4472C4; 
@@ -158,8 +155,6 @@
     <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
     <button class="btn btn-pres" onclick="togglePresentation()">Präsentation (P)</button>
     <button class="btn" style="background:#6c757d; color:white" onclick="toggleSettings()">⚙️</button>
-    <input type="file" accept="application/pdf" onchange="importPDF(event)" style="max-width:180px;">
-<button class="btn" style="background:#17a2b8; color:white" onclick="eventsData=[]; render()">Reset</button>
 
 </div>
 
@@ -205,97 +200,6 @@
         const s = document.getElementById('settings-menu');
         s.style.display = s.style.display === 'flex' ? 'none' : 'flex';
     }
-
-    async function importPDF(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (!confirm("PDF importieren? (OCR – kann etwas dauern)")) return;
-
-    eventsData = [];
-
-    const reader = new FileReader();
-
-    reader.onload = async function() {
-        const typedarray = new Uint8Array(this.result);
-        const pdf = await pdfjsLib.getDocument(typedarray).promise;
-
-        let fullText = "";
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-
-            const viewport = page.getViewport({ scale: 2 });
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            await page.render({
-                canvasContext: context,
-                viewport: viewport
-            }).promise;
-
-            // OCR (Texterkennung)
-            const result = await Tesseract.recognize(canvas, 'deu', {
-                logger: m => console.log(m) // optional Fortschritt
-            });
-
-            fullText += result.data.text + "\n";
-        }
-
-        parsePDFText(fullText);
-    };
-
-    reader.readAsArrayBuffer(file);
-}
-
-function parsePDFText(text) {
-    eventsData = [];
-
-    text = text.replace(/\n/g, " ");
-
-    const regex = /(\d{3,4}\s?(v\.?\s?Chr\.?)?)/gi;
-
-    let match;
-    let added = 0;
-
-    while ((match = regex.exec(text)) !== null) {
-        const year = match[0].trim();
-
-        let start = match.index + match[0].length;
-        let snippet = text.substring(start, start + 120);
-
-        const nextYear = snippet.match(/(\d{3,4}\s?(v\.?\s?Chr\.?)?)/i);
-        if (nextYear) {
-            snippet = snippet.substring(0, nextYear.index);
-        }
-
-        let desc = snippet.trim();
-
-        desc = desc.replace(/^[\-\–\:\s]+/, "");
-        desc = desc.replace(/\s+/g, " ");
-
-        if (desc.length > 5) {
-            eventsData.push({
-                id: Date.now() + Math.random(),
-                year: year,
-                desc: desc,
-                icon: ""
-            });
-            added++;
-        }
-    }
-
-    if (added === 0) {
-        alert("❌ Nichts erkannt – PDF evtl. zu komplex");
-    } else {
-        sortEvents();
-        render();
-        alert("✅ " + added + " Ereignisse importiert!");
-    }
-}
 
     function showTitleEditor(e) {
         const editor = document.getElementById('header-editor');
