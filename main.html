@@ -249,49 +249,53 @@
 }
 
 function parsePDFText(text) {
-    const lines = text.split("\n");
+    eventsData = [];
 
+    // alles in eine große Zeile
+    text = text.replace(/\n/g, " ");
+
+    // findet ALLE Jahre im Text
+    const regex = /(\d{3,4}\s?(v\.?\s?Chr\.?)?)/gi;
+
+    let match;
     let added = 0;
 
-    lines.forEach(line => {
-        line = line.trim();
+    while ((match = regex.exec(text)) !== null) {
+        const year = match[0].trim();
 
-        if (!line) return;
+        // Text nach dem Jahr holen
+        let start = match.index + match[0].length;
+        let snippet = text.substring(start, start + 120); // 120 Zeichen danach
 
-        // erkennt z.B.:
-        // 1945
-        // 300 v. Chr.
-        // 2020
-        const match = line.match(/(\d{3,4}\s?(v\.?\s?Chr\.?)?)/i);
+        // bis zum nächsten Jahr abschneiden (falls vorhanden)
+        const nextYear = snippet.match(/(\d{3,4}\s?(v\.?\s?Chr\.?)?)/i);
+        if (nextYear) {
+            snippet = snippet.substring(0, nextYear.index);
+        }
 
-        if (match) {
-            const year = match[0].trim();
+        let desc = snippet.trim();
 
-            let desc = line.replace(match[0], "").trim();
+        // Cleanup
+        desc = desc.replace(/^[\-\–\:\s]+/, "");
+        desc = desc.replace(/\s+/g, " ");
 
-            // Müll rausfiltern
-            if (desc.length < 4) return;
-
-            // doppelte Leerzeichen entfernen
-            desc = desc.replace(/\s+/g, " ");
-
+        if (desc.length > 5) {
             eventsData.push({
                 id: Date.now() + Math.random(),
                 year: year,
                 desc: desc,
                 icon: ""
             });
-
             added++;
         }
-    });
+    }
 
     if (added === 0) {
-        alert("⚠️ Keine Ereignisse erkannt.\nVersuche ein einfacheres PDF.");
+        alert("❌ Konnte nichts erkennen.\nPDF ist zu komplex (z. B. Bild oder Layout).");
     } else {
         sortEvents();
         render();
-        alert("✅ " + added + " Ereignisse importiert!");
+        alert("✅ " + added + " Ereignisse erkannt (verbesserter Modus)");
     }
 }
 
