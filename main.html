@@ -253,11 +253,25 @@
         document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
     }
 
-    document.addEventListener('keydown', (e) => {
-        if(!document.body.classList.contains('pres-mode')) return;
-        if(e.key === 'ArrowRight') { presIdx = Math.min(presIdx + 1, eventsData.length - 1); updateFocus(); }
-        if(e.key === 'ArrowLeft') { presIdx = Math.max(presIdx - 1, 0); updateFocus(); }
-    });
+document.addEventListener('keydown', (e) => {
+    // 1. Prevent triggers when typing in text fields
+    const isTyping = e.target.tagName === 'INPUT' || 
+                     e.target.tagName === 'TEXTAREA' || 
+                     e.target.isContentEditable;
+
+    if (isTyping) return;
+    if (e.key.toLowerCase() === 'p') {
+        togglePresentation();
+    }
+    if (!document.body.classList.contains('pres-mode')) return;
+    if (e.key === 'ArrowRight') {
+        presIdx = Math.min(presIdx + 1, eventsData.length - 1);
+        updateFocus();
+    } else if (e.key === 'ArrowLeft') {
+        presIdx = Math.max(presIdx - 1, 0);
+        updateFocus();
+    }
+});
 
     function updateFocus() {
         document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
