@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Zeitstrahl Generator Pro</title>
+    <title>Zeitstrahl Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { 
@@ -62,7 +62,7 @@
             width: 1100px; min-height: 650px; box-sizing: border-box; overflow: visible;
         }
 
-        #title-el { font-size: 2.5em; margin-bottom: 30px; outline: none; color: #000; }
+        #title-el { font-size: 2.5em; margin-bottom: 30px; outline: none; }
         
         .main-timeline-line { 
             position: absolute; top: 55%; left: 80px; right: 100px; 
@@ -89,15 +89,19 @@
             flex-direction: column; 
             align-items: center; 
             z-index: 10;
+            padding: 0;
         }
 
         .event.top { justify-content: flex-end; }
         .event.bottom { justify-content: flex-start; }
 
         .connector { 
-            width: 2px; height: 60px; 
+            width: 2px; 
+            height: 60px; 
             background: var(--line-color); 
-            position: relative; flex-shrink: 0; 
+            position: relative; 
+            flex-shrink: 0; 
+            margin: 0;
         }
         
         .milestone-badge {
@@ -109,10 +113,16 @@
         .event.top .milestone-badge { top: 50%; }
         .event.bottom .milestone-badge { bottom: 50%; }
 
-        .content-box { text-align: center; width: 100%; }
+        .content-box { 
+            text-align: center; 
+            width: 100%;
+            display: block; 
+            margin: 0;
+        }
+
         .year { font-size: var(--year-size); font-weight: bold; margin: 0; outline: none; }
         .divider { width: 30px; height: 3px; background: var(--line-color); margin: 8px auto; }
-        .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; padding: 4px; border-radius: 4px; }
+        .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; border-radius: 4px; padding: 4px; }
         .limit-exceeded { background: #fff1f1; border: 1px solid red; }
 
         #emoji-picker {
@@ -120,11 +130,24 @@
             padding: 10px; border-radius: 8px; z-index: 3000; grid-template-columns: repeat(4, 1fr); gap: 5px;
         }
         .emoji-btn { cursor: pointer; font-size: 20px; padding: 5px; text-align: center; }
+
+        @media print { .main-controls, #settings-menu, #header-editor, #emoji-picker { display: none !important; } }
     </style>
 </head>
 <body>
 
 <div class="main-controls">
+    <span style="color: #555; font-weight: bold; margin-right: 5px;">Andere Tools:</span>
+    
+    <button class="btn" 
+            style="background:#cc545e; color:white; min-width: 100px;" 
+            onmouseover="this.innerText='Kommt Bald!'" 
+            onmouseout="this.innerText='Mind Map'">
+            Mind Map
+    </button>
+
+    <span style="border-left: 2px solid #ccc; margin: 0 15px; height: 20px; display: inline-block; vertical-align: middle;"></span>
+
     <input type="text" id="yearIn" class="input-box" placeholder="Jahr (v. Chr.)" style="width: 120px;">
     <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 220px;" onkeydown="if(event.key==='Enter') addEvent()">
     
@@ -132,74 +155,83 @@
     <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
     <button class="btn btn-pres" onclick="togglePresentation()">Präsentation (P)</button>
     <button class="btn" style="background:#6c757d; color:white" onclick="toggleSettings()">⚙️</button>
+
 </div>
 
-<div id="settings-menu">
-    <div class="setting-group"><label>Überschrift Farbe</label><input type="color" id="titleColorSet" value="#000000" oninput="applyAllSettings()"></div>
-    <div class="setting-group"><label>Linie Farbe</label><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"></div>
-    <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="applyAllSettings()"></div></div>
-    <div class="setting-group"><label>Lücke Korr.</label><input type="range" id="gapAdjSet" min="-15" max="15" value="0" oninput="render()"></div>
-    
-    <div class="setting-group">
-        <label>Projekt (Import/Export)</label>
-        <div style="display:flex; gap:5px;">
-            <button class="btn" style="background:#007bff; color:white; padding:5px 10px; font-size:10px;" onclick="exportProject()">Speichern</button>
-            <button class="btn" style="background:#28a745; color:white; padding:5px 10px; font-size:10px;" onclick="document.getElementById('fileIn').click()">Laden</button>
-            <input type="file" id="fileIn" style="display:none" accept=".json" onchange="importProject(event)">
-        </div>
+    <div id="settings-menu">
+        <div class="setting-group"><label>Symbole</label><input type="checkbox" id="allowIcons" checked onchange="render()"></div>
+        <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:4px;"><input type="number" id="yearSizeSet" value="26" style="width:45px;" oninput="applyAllSettings()"><input type="number" id="infoSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Linie Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="lineWeightSet" value="4" style="width:35px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Lücke Korrektur</label><input type="range" id="gapAdjSet" min="-15" max="15" value="0" oninput="render()"></div>
+        <div class="setting-group"><label>Limit/Stopp</label><div style="display:flex;gap:4px;"><input type="number" id="limitSet" value="120" style="width:40px;" oninput="applyAllSettings()"><input type="checkbox" id="hardStopSet"></div></div>
+        <div class="setting-group"><label>Optionen</label><div style="display:flex; gap:10px;"><label><input type="checkbox" id="titleShowSet" checked onchange="applyAllSettings()"> Titel</label><label><input type="checkbox" id="footSet" checked onchange="applyAllSettings()"> Sig.</label></div></div>
+        <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
     </div>
-    
-    <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">PDF Export</button>
-</div>
 
-<div id="header-editor">
-    <input type="number" id="headSizeIn" value="40" style="width:50px" oninput="formatTitle('fontSize', this.value + 'px')">
-    <button onclick="formatTitle('justifyCenter')">Center</button>
-</div>
+    <div id="header-editor">
+        <input type="number" id="headSizeIn" value="40" style="width:50px" oninput="formatTitle('fontSize', this.value + 'px')">
+        <button onclick="formatTitle('underline')"><u>U</u></button>
+        <button onclick="formatTitle('justifyLeft')">⬅</button>
+        <button onclick="formatTitle('justifyCenter')">Center</button>
+        <button onclick="formatTitle('justifyRight')">➡</button>
+    </div>
 
-<div id="emoji-picker">
-    <span class="emoji-btn" onclick="setEmoji('')">❌</span>
-    <span class="emoji-btn" onclick="setEmoji('👑')">👑</span><span class="emoji-btn" onclick="setEmoji('⚔️')">⚔️</span>
-    <span class="emoji-btn" onclick="setEmoji('💡')">💡</span><span class="emoji-btn" onclick="setEmoji('🌍')">🌍</span>
-</div>
+    <div id="emoji-picker">
+        <span class="emoji-btn" onclick="setEmoji('')">❌</span>
+        <span class="emoji-btn" onclick="setEmoji('👑')">👑</span><span class="emoji-btn" onclick="setEmoji('⚔️')">⚔️</span>
+        <span class="emoji-btn" onclick="setEmoji('💡')">💡</span><span class="emoji-btn" onclick="setEmoji('📜')">📜</span>
+        <span class="emoji-btn" onclick="setEmoji('🔥')">🔥</span><span class="emoji-btn" onclick="setEmoji('🌍')">🌍</span>
+    </div>
 
-<div id="export-area">
-    <h1 id="title-el" contenteditable="true" onfocus="showTitleEditor(event)">Mein Zeitstrahl</h1>
-    <div class="main-timeline-line"></div>
-    <div id="events-container"></div>
-    <div id="footer-text" style="position:absolute; bottom:20px; right:40px; font-size:12px; color:#999;">erstellt mit Zeitstrahl-Generator</div>
-</div>
+    <div id="export-area">
+        <h1 id="title-el" contenteditable="true" onfocus="showTitleEditor(event)">Mein Zeitstrahl</h1>
+        <div class="main-timeline-line"></div>
+        <div id="events-container"></div>
+        <div id="footer-text" style="position:absolute; bottom:20px; right:40px; font-size:12px; color:#999;">erstellt mit https://jasonnewacc.github.io/zeitstrahl.github.io/main</div>
+    </div>
 
 <script>
     let eventsData = [];
     let activeEventIdx = -1;
     let presIdx = -1;
 
-    // FIX: "P" Taste blockieren, wenn man in Textfeldern schreibt
-    document.addEventListener('keydown', (e) => {
-        if (e.target.isContentEditable || e.target.tagName === 'INPUT') return;
-        
-        if(e.key.toLowerCase() === 'p') { e.preventDefault(); togglePresentation(); }
-        if(!document.body.classList.contains('pres-mode')) return;
-        if(e.key === 'ArrowRight') { presIdx = Math.min(presIdx + 1, eventsData.length - 1); updateFocus(); }
-        if(e.key === 'ArrowLeft') { presIdx = Math.max(presIdx - 1, 0); updateFocus(); }
-    });
-
     function toggleSettings() {
         const s = document.getElementById('settings-menu');
         s.style.display = s.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function showTitleEditor(e) {
+        const editor = document.getElementById('header-editor');
+        const rect = e.target.getBoundingClientRect();
+        editor.style.display = 'flex';
+        editor.style.left = rect.left + 'px';
+        editor.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+    }
+
+    function formatTitle(cmd, val = null) {
+        if(cmd === 'fontSize') document.getElementById('title-el').style.fontSize = val;
+        else document.execCommand(cmd, false, val);
     }
 
     function applyAllSettings() {
         const area = document.getElementById('export-area');
         area.style.width = document.getElementById('wSet').value + "px";
         area.style.height = document.getElementById('hSet').value + "px";
-        
-        const title = document.getElementById('title-el');
-        title.style.color = document.getElementById('titleColorSet').value;
-
+        document.documentElement.style.setProperty('--year-size', document.getElementById('yearSizeSet').value + "px");
+        document.documentElement.style.setProperty('--info-size', document.getElementById('infoSizeSet').value + "px");
         document.documentElement.style.setProperty('--line-color', document.getElementById('lineColorSet').value);
+        document.documentElement.style.setProperty('--line-weight', document.getElementById('lineWeightSet').value + "px");
+        document.getElementById('title-el').style.display = document.getElementById('titleShowSet').checked ? 'block' : 'none';
+        document.getElementById('footer-text').style.display = document.getElementById('footSet').checked ? 'block' : 'none';
         render();
+    }
+
+    function parseYear(val) {
+        let str = val.toString().toLowerCase();
+        let num = parseInt(str.replace(/[^0-9-]/g, ''));
+        if (isNaN(num)) return 0;
+        return (str.includes('v.') || str.includes('vor')) ? -Math.abs(num) : num;
     }
 
     function addEvent() {
@@ -210,74 +242,89 @@
         render();
     }
 
+    function sortEvents() {
+        eventsData.sort((a, b) => parseYear(a.year) - parseYear(b.year));
+        render();
+    }
+
+    function togglePresentation() {
+        document.body.classList.toggle('pres-mode');
+        presIdx = -1;
+        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if(e.key.toLowerCase() === 'p') togglePresentation();
+        if(!document.body.classList.contains('pres-mode')) return;
+        if(e.key === 'ArrowRight') { presIdx = Math.min(presIdx + 1, eventsData.length - 1); updateFocus(); }
+        if(e.key === 'ArrowLeft') { presIdx = Math.max(presIdx - 1, 0); updateFocus(); }
+    });
+
+    function updateFocus() {
+        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
+        const target = document.querySelector(`#ev-dom-${presIdx}`);
+        if(target) target.classList.add('focus-event');
+    }
+
     function render() {
         const container = document.getElementById('events-container');
         container.innerHTML = "";
+        const showIcons = document.getElementById('allowIcons').checked;
         const width = parseInt(document.getElementById('wSet').value);
+        const lineWeight = parseInt(document.getElementById('lineWeightSet').value);
         const gapAdj = parseInt(document.getElementById('gapAdjSet').value); 
-        const availableWidth = width - 240;
+        const timelineY = 55; 
+
+        const paddingSide = 120; 
+        const availableWidth = width - (paddingSide * 2);
 
         eventsData.forEach((ev, i) => {
             const isTop = i % 2 === 0;
-            let pos = (eventsData.length > 1) ? 120 + (i / (eventsData.length - 1)) * availableWidth : width / 2;
+            let pos = (eventsData.length > 1) 
+                ? paddingSide + (i / (eventsData.length - 1)) * availableWidth 
+                : width / 2;
 
             const div = document.createElement('div');
             div.className = `event ${isTop ? 'top' : 'bottom'}`;
             div.id = `ev-dom-${i}`;
             div.style.left = pos + "px";
-            div.style[isTop ? 'bottom' : 'top'] = "45%";
-            div.style[isTop ? 'marginBottom' : 'marginTop'] = (2 - gapAdj) + "px";
+            
+            if(isTop) {
+                div.style.bottom = (100 - timelineY) + "%"; 
+                div.style.marginBottom = ((lineWeight / 2) - gapAdj) + "px";
+                div.style.top = "auto";
+            } else {
+                div.style.top = timelineY + "%";
+                div.style.marginTop = ((lineWeight / 2) - gapAdj) + "px";
+                div.style.bottom = "auto";
+            }
 
-            div.innerHTML = isTop ? 
-                `<div class="content-box">
-                    <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
-                    <div class="divider"></div>
-                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText">${ev.desc}</div>
-                </div>
-                <div class="connector" onclick="openEmojiPicker(event, ${i})">${ev.icon ? `<div class="milestone-badge">${ev.icon}</div>` : ''}</div>` 
-                : 
-                `<div class="connector" onclick="openEmojiPicker(event, ${i})">${ev.icon ? `<div class="milestone-badge">${ev.icon}</div>` : ''}</div>
+            const contentHtml = `
                 <div class="content-box">
                     <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
                     <div class="divider"></div>
-                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText">${ev.desc}</div>
+                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
                 </div>`;
+            
+            const connectorHtml = `
+                <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
+                    ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
+                </div>`;
+
+            div.innerHTML = isTop ? (contentHtml + connectorHtml) : (connectorHtml + contentHtml);
             container.appendChild(div);
+            checkLimit(div.querySelector('.description'));
         });
     }
 
-    function exportProject() {
-        const project = {
-            title: document.getElementById('title-el').innerText,
-            titleColor: document.getElementById('titleColorSet').value,
-            lineColor: document.getElementById('lineColorSet').value,
-            events: eventsData
-        };
-        const blob = new Blob([JSON.stringify(project)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'zeitstrahl_export.json';
-        a.click();
-    }
-
-    function importProject(event) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = JSON.parse(e.target.result);
-            eventsData = data.events;
-            document.getElementById('title-el').innerText = data.title;
-            document.getElementById('titleColorSet').value = data.titleColor || "#000000";
-            document.getElementById('lineColorSet').value = data.lineColor || "#4472C4";
-            applyAllSettings();
-        };
-        reader.readAsText(event.target.files[0]);
-    }
-
-    function togglePresentation() { document.body.classList.toggle('pres-mode'); presIdx = -1; }
-    function updateFocus() {
-        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
-        const target = document.querySelector(`#ev-dom-${presIdx}`);
-        if(target) target.classList.add('focus-event');
+    function checkLimit(el) {
+        if(!el) return;
+        const limit = parseInt(document.getElementById('limitSet').value);
+        const hardStop = document.getElementById('hardStopSet').checked;
+        if(el.innerText.length > limit) {
+            if(hardStop) el.innerText = el.innerText.substring(0, limit);
+            else el.classList.add('limit-exceeded');
+        } else el.classList.remove('limit-exceeded');
     }
 
     function openEmojiPicker(e, idx) {
@@ -285,23 +332,29 @@
         const p = document.getElementById('emoji-picker');
         p.style.display = 'grid'; p.style.left = e.pageX + 'px'; p.style.top = e.pageY + 'px';
     }
+
     function setEmoji(emoji) {
         if(activeEventIdx !== -1) { eventsData[activeEventIdx].icon = emoji; render(); }
         document.getElementById('emoji-picker').style.display = 'none';
     }
 
-    function sortEvents() {
-        eventsData.sort((a, b) => {
-            const parseY = (s) => parseInt(s.replace(/[^0-9]/g, '')) * (s.includes('v') ? -1 : 1);
-            return parseY(a.year) - parseY(b.year);
-        });
-        render();
-    }
-
     function downloadPDF() {
         const area = document.getElementById('export-area');
-        html2pdf().set({ margin: 0, filename: 'zeitstrahl.pdf', jsPDF: { unit: 'px', format: [1100, 650], orientation: 'l' }}).from(area).save();
+        const w = parseInt(document.getElementById('wSet').value);
+        const h = parseInt(document.getElementById('hSet').value);
+        
+        html2pdf().set({
+            margin: 0, 
+            filename: 'zeitstrahl.pdf', 
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'px', format: [w, h], orientation: 'landscape' }
+        }).from(area).save();
     }
+
+    document.addEventListener('mousedown', (e) => {
+        if(!e.target.closest('#header-editor') && !e.target.closest('#title-el')) document.getElementById('header-editor').style.display = 'none';
+        if(!e.target.closest('#emoji-picker')) document.getElementById('emoji-picker').style.display = 'none';
+    });
 
     applyAllSettings();
 </script>
