@@ -139,7 +139,6 @@
 
 <div class="main-controls">
     <span style="color: #555; font-weight: bold; margin-right: 5px;">Andere Tools:</span>
-    <input type="file" accept="application/pdf" onchange="importPDF(event)">
     
     <button class="btn" 
             style="background:#cc545e; color:white; min-width: 100px;" 
@@ -156,6 +155,8 @@
     <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
     <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
     <button class="btn btn-pres" onclick="togglePresentation()">Präsentation (P)</button>
+    <input type="file" accept="application/pdf" onchange="importPDF(event)" style="max-width:180px;">
+<button class="btn" style="background:#17a2b8; color:white" onclick="eventsData=[]; render()">Reset</button>
     <button class="btn" style="background:#6c757d; color:white" onclick="toggleSettings()">⚙️</button>
 
 </div>
@@ -220,6 +221,10 @@
     const file = event.target.files[0];
     if (!file) return;
 
+    if (!confirm("Bestehenden Zeitstrahl überschreiben?")) return;
+
+    eventsData = [];
+
     const reader = new FileReader();
 
     reader.onload = async function() {
@@ -243,31 +248,51 @@
     reader.readAsArrayBuffer(file);
 }
 
-async function importPDF(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+function parsePDFText(text) {
+    const lines = text.split("\n");
 
-    const reader = new FileReader();
+    let added = 0;
 
-    reader.onload = async function() {
-        const typedarray = new Uint8Array(this.result);
+    lines.forEach(line => {
+        line = line.trim();
 
-        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+        if (!line) return;
 
-        let fullText = "";
+        // erkennt z.B.:
+        // 1945
+        // 300 v. Chr.
+        // 2020
+        const match = line.match(/(\d{3,4}\s?(v\.?\s?Chr\.?)?)/i);
 
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
+        if (match) {
+            const year = match[0].trim();
 
-            const strings = content.items.map(item => item.str);
-            fullText += strings.join(" ") + "\n";
+            let desc = line.replace(match[0], "").trim();
+
+            // Müll rausfiltern
+            if (desc.length < 4) return;
+
+            // doppelte Leerzeichen entfernen
+            desc = desc.replace(/\s+/g, " ");
+
+            eventsData.push({
+                id: Date.now() + Math.random(),
+                year: year,
+                desc: desc,
+                icon: ""
+            });
+
+            added++;
         }
+    });
 
-        parsePDFText(fullText);
-    };
-
-    reader.readAsArrayBuffer(file);
+    if (added === 0) {
+        alert("⚠️ Keine Ereignisse erkannt.\nVersuche ein einfacheres PDF.");
+    } else {
+        sortEvents();
+        render();
+        alert("✅ " + added + " Ereignisse importiert!");
+    }
 }
 
     function applyAllSettings() {
