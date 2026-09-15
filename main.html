@@ -2,29 +2,14 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Diagramm Generator</title>
+    <title>Zeitstrahl Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root {
-            --accent-color: #4472C4;
-            --accent-weight: 4px;
-            --label-size: 16px;
-            --value-size: 16px;
-        }
-
-        .btn {
-            padding: 8px 18px;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-            background: #4472C4;
-            color: white;
-        }   
-
-        .btn:hover {
-            background: #365f9f;
+        :root { 
+            --line-color: #4472C4; 
+            --line-weight: 4px; 
+            --year-size: 1.5em;
+            --info-size: 0.9em;
         }
 
         body {
@@ -33,24 +18,28 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        #type-picker {
-            margin-top: 60px; text-align: center;
+        body.pres-mode { background: #111; overflow: hidden; }
+        body.pres-mode .main-controls, body.pres-mode #settings-menu, body.pres-mode #header-editor { display: none !important; }
+        
+        .focus-event { 
+            outline: 4px solid gold !important; 
+            transform: scale(1.3) !important;
+            z-index: 1000 !important; 
+            background: white; border-radius: 10px; padding: 15px;
+            box-shadow: 0 0 40px rgba(255,215,0,0.6);
         }
-        #type-picker p { color: #444; font-weight: bold; margin-bottom: 15px; }
-        .type-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-        .type-buttons .btn { padding: 12px 24px; font-size: 1em; }
 
         .main-controls {
             background: white; padding: 12px 20px; border-radius: 50px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+            display: flex; gap: 10px; align-items: center;
             margin-bottom: 15px; position: sticky; top: 10px; z-index: 1000;
         }
 
         .input-box { padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
-        select.input-box { cursor: pointer; }
         .btn { padding: 8px 18px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-add { background: #4472C4; color: white; }
+        .btn-pres { background: #2c3e50; color: white; }
 
         #header-editor {
             display: none; position: absolute; background: #222; color: white;
@@ -65,7 +54,7 @@
             gap: 15px; flex-wrap: wrap; justify-content: center;
         }
         .setting-group { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: bold; color: #444; text-transform: uppercase; }
-        .setting-group input, .setting-group select { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
+        .setting-group input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
 
         #export-area {
             background: white; padding: 60px 80px; position: relative;
@@ -74,178 +63,147 @@
         }
 
         #title-el { font-size: 2.5em; margin-bottom: 30px; outline: none; }
-
-        #chart-area { position: relative; width: 100%; height: 400px; box-sizing: border-box; }
-
-        .gridline { position: absolute; left: 0; right: 0; height: 1px; background: #eee; }
-
-        #bars-row {
-            position: absolute; left: 0; right: 0; bottom: 0; top: 0;
-            display: flex; align-items: flex-end; justify-content: space-evenly;
-            border-bottom: var(--accent-weight) solid var(--accent-color);
+        
+        .main-timeline-line { 
+            position: absolute; top: 55%; left: 80px; right: 100px; 
+            height: var(--line-weight); background: var(--line-color); 
+            z-index: 1;
         }
-        .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; flex: 1; max-width: 140px; }
-        .bar-value { font-size: var(--value-size); font-weight: bold; margin-bottom: 4px; outline: none; color: #333; }
-        .bar { width: 60%; max-width: 70px; border-radius: 6px 6px 0 0; transition: height 0.2s; cursor: pointer; }
-
-        #axis-labels { display: flex; justify-content: space-evenly; margin-top: 10px; }
-        .axis-col { flex: 1; max-width: 140px; display: flex; justify-content: center; }
-        .axis-label { font-size: var(--label-size); outline: none; white-space: nowrap; padding: 4px; border-radius: 4px; }
-        .axis-labels-horizontal .axis-label { transform: none; }
-        .axis-labels-schraeg .axis-label { transform: rotate(-40deg); transform-origin: top right; margin-top: 6px; }
-        .axis-labels-hochkant .axis-label { writing-mode: vertical-rl; transform: rotate(180deg); margin-top: 6px; }
-
-        /* Kurvendiagramm */
-        #line-svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
-        .line-point {
-            position: absolute; width: 14px; height: 14px; border-radius: 50%;
-            background: white; border: 3px solid var(--accent-color); transform: translate(-50%, -50%);
-            cursor: pointer; z-index: 5;
-        }
-        .line-value {
-            position: absolute; transform: translate(-50%, -130%); font-size: var(--value-size);
-            font-weight: bold; outline: none; color: #333; white-space: nowrap; padding: 2px 4px; border-radius: 4px;
+        .main-timeline-line::after {
+            content: ''; position: absolute; right: -25px; top: 50%; transform: translateY(-50%);
+            border-top: 15px solid transparent; border-bottom: 15px solid transparent;
+            border-left: 25px solid var(--line-color);
         }
 
-        #pie-wrapper { display: flex; align-items: center; justify-content: center; gap: 60px; height: 100%; }
-        #pie-visual { width: 280px; height: 280px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
-        #pie-legend { display: flex; flex-direction: column; gap: 12px; }
-        .legend-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .legend-swatch { width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; }
-        .legend-label { font-size: var(--label-size); outline: none; font-weight: bold; padding: 2px 4px; border-radius: 4px; min-width: 80px; }
-        .legend-value { font-size: var(--value-size); outline: none; color: #666; padding: 2px 4px; border-radius: 4px; }
-        .legend-pct { font-size: 0.8em; color: #999; }
-        #pie-visual { position: relative; }
-        .pie-value {
-            position: absolute; transform: translate(-50%, -50%);
-            font-size: var(--value-size); font-weight: bold; color: white;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.65);
-            pointer-events: none; white-space: nowrap;
+        #events-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5;
         }
-        #pie-total-info {
-            margin-top: 8px; font-size: 12px; color: #777; text-align: center;
-        }
-        .percentage-input { display: none; }
+        #events-container * { pointer-events: auto; }
 
+        .event { 
+            position: absolute; 
+            width: 220px; 
+            margin-left: -110px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            z-index: 10;
+            padding: 0;
+        }
+
+        .event.top { justify-content: flex-end; }
+        .event.bottom { justify-content: flex-start; }
+
+        .connector { 
+            width: 2px; 
+            height: 60px; 
+            background: var(--line-color); 
+            position: relative; 
+            flex-shrink: 0; 
+            margin: 0;
+        }
+        
+        .milestone-badge {
+            position: absolute; left: 50%; transform: translate(-50%, -50%);
+            background: white; border: 2px solid var(--line-color); border-radius: 50%;
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; z-index: 20;
+        }
+        .event.top .milestone-badge { top: 50%; }
+        .event.bottom .milestone-badge { bottom: 50%; }
+
+        .content-box { 
+            text-align: center; 
+            width: 100%;
+            display: block; 
+            margin: 0;
+        }
+
+        .year { font-size: var(--year-size); font-weight: bold; margin: 0; outline: none; }
+        .divider { width: 30px; height: 3px; background: var(--line-color); margin: 8px auto; }
+        .description { font-size: var(--info-size); margin: 0; outline: none; line-height: 1.4; border-radius: 4px; padding: 4px; }
         .limit-exceeded { background: #fff1f1; border: 1px solid red; }
 
-        @media print { .main-controls, #settings-menu, #header-editor, #type-picker { display: none !important; } }
+        #emoji-picker {
+            display: none; position: absolute; background: white; border: 1px solid #ccc;
+            padding: 10px; border-radius: 8px; z-index: 3000; grid-template-columns: repeat(4, 1fr); gap: 5px;
+        }
+        .emoji-btn { cursor: pointer; font-size: 20px; padding: 5px; text-align: center; }
+
+        @media print { .main-controls, #settings-menu, #header-editor, #emoji-picker { display: none !important; } }
     </style>
 </head>
 <body>
 
-<div id="type-picker">
-    <h1>Diagramm Generator</h1>
-    <p>Wähle einen Diagrammtyp aus, um zu starten</p>
-    <div class="type-cards">
-<button class="btn" style="background:#28a745; color:white;" onclick="selectType('bar')">
-            <div class="icon">📊</div>
-            <div class="name">Balkendiagramm</div>
-            <div class="desc">Werte als Balken vergleichen</div>
-        </button>
-        <button class="btn" style="background:#77bee7; color:white;" onclick="selectType('line')">
-            <div class="icon">📈</div>
-            <div class="name">Kurvendiagramm</div>
-            <div class="desc">Entwicklung über Punkte hinweg</div>
-        </button>
-        <button class="btn" style="background:#f39c12; color:white;" onclick="selectType('pie')">
-            <div class="icon">🥧</div>
-            <div class="name">Klassisches Diagramm</div>
-            <div class="desc">Kreisdiagramm mit Anteilen</div>
-        </div>
-    </div>
-</div>
-
-<div class="main-controls" style="display:none;">
+<div class="main-controls">
     <span style="color: #555; font-weight: bold; margin-right: 5px;">Andere Tools:</span>
-    <button class="btn" style="background:#4472C4; color:white; min-width: 90px;" onclick="window.open('https://jasonnewacc.github.io/zeitstrahl.github.io/main','_blank')">Zeitstrahl</button>
-    <button class="btn" style="background:#cc545e; color:white; min-width: 100px;" onmouseover="this.innerText='Kommt Bald!'" onmouseout="this.innerText='Mind Map'">Mind Map</button>
+    
+    <button class="btn" 
+            style="background:#cc545e; color:white; min-width: 100px;" 
+            onmouseover="this.innerText='Kommt Bald!'" 
+            onmouseout="this.innerText='Mind Map'">
+            Mind Map
+    </button>
+
+<button class="btn"
+    style="background:#77bee7; color:white; min-width:100px;"
+    onclick="window.open('https://jasonnewacc.github.io/zeitstrahl.github.io/', 'diagram')"
+    onmouseout="this.innerText='Diagramm'">
+    Diagramm
+</button>
+
+
 
     <span style="border-left: 2px solid #ccc; margin: 0 15px; height: 20px; display: inline-block; vertical-align: middle;"></span>
 
-    <select id="typeSelect" class="input-box" onchange="switchType(this.value)">
-        <option value="bar">Balkendiagramm</option>
-        <option value="line">Kurvendiagramm</option>
-        <option value="pie">Klassisches Diagramm</option>
-    </select>
-
-    <input type="text" id="labelIn" class="input-box" placeholder="Beschriftung" style="width: 150px;">
-    <input type="text" id="valueIn" class="input-box" placeholder="Wert" style="width: 90px;" onkeydown="if(event.key==='Enter') addPoint()">
-    <input type="text" id="percentIn" class="input-box percentage-input" placeholder="Prozent (z.B. 25)" style="width: 120px;" onkeydown="if(event.key==='Enter') addPoint()">
-
-    <button class="btn btn-add" onclick="addPoint()">Hinzufügen</button>
-    <button class="btn" style="background:#f39c12; color:white" onclick="sortPoints()">Sortieren</button>
-    <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
+    <input type="text" id="yearIn" class="input-box" placeholder="Jahr (v. Chr.)" style="width: 120px;">
+    <input type="text" id="descIn" class="input-box" placeholder="Ereignis..." style="width: 220px;" onkeydown="if(event.key==='Enter') addEvent()">
+    
+    <button class="btn btn-add" onclick="addEvent()">Hinzufügen</button>
+    <button class="btn" style="background:#f39c12; color:white" onclick="sortEvents()">Sortieren</button>
+    <button class="btn btn-pres" onclick="togglePresentation()">Präsentation (P)</button>
     <button class="btn" style="background:#6c757d; color:white" onclick="toggleSettings()">⚙️</button>
+
 </div>
 
-<div id="settings-menu">
-    <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="applyAllSettings()"></div></div>
-    <div class="setting-group"><label>Schrift Label/Wert</label><div style="display:flex;gap:4px;"><input type="number" id="labelSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"><input type="number" id="valueSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"></div></div>
-    <div class="setting-group"><label>Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="colorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="weightSet" value="4" style="width:35px;" oninput="applyAllSettings()"></div></div>
-    <div class="setting-group" id="orientGroup"><label>Balken-Beschriftung</label>
-        <select id="orientSet" onchange="applyAllSettings()">
-            <option value="horizontal" selected>Gerade</option>
-            <option value="schraeg">Schräg</option>
-            <option value="hochkant" >Hochkant</option>
-        </select>
+    <div id="settings-menu">
+        <div class="setting-group"><label>Symbole</label><input type="checkbox" id="allowIcons" checked onchange="render()"></div>
+        <div class="setting-group"><label>Größe BxH</label><div style="display:flex;gap:4px;"><input type="number" id="wSet" value="1100" style="width:55px;" oninput="applyAllSettings()"><input type="number" id="hSet" value="650" style="width:55px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Schrift J/I</label><div style="display:flex;gap:4px;"><input type="number" id="yearSizeSet" value="26" style="width:45px;" oninput="applyAllSettings()"><input type="number" id="infoSizeSet" value="16" style="width:45px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Linie Farbe/Dicke</label><div style="display:flex;gap:4px;"><input type="color" id="lineColorSet" value="#4472C4" oninput="applyAllSettings()"><input type="number" id="lineWeightSet" value="4" style="width:35px;" oninput="applyAllSettings()"></div></div>
+        <div class="setting-group"><label>Lücke Korrektur</label><input type="range" id="gapAdjSet" min="-15" max="15" value="0" oninput="render()"></div>
+        <div class="setting-group"><label>Limit/Stopp</label><div style="display:flex;gap:4px;"><input type="number" id="limitSet" value="120" style="width:40px;" oninput="applyAllSettings()"><input type="checkbox" id="hardStopSet"></div></div>
+        <div class="setting-group"><label>Optionen</label><div style="display:flex; gap:10px;"><label><input type="checkbox" id="titleShowSet" checked onchange="applyAllSettings()"> Titel</label><label><input type="checkbox" id="footSet" checked onchange="applyAllSettings()"> Sig.</label></div></div>
+        <button class="btn" style="background:#28a745; color:white" onclick="downloadPDF()">Export PDF</button>
     </div>
-    <div class="setting-group"><label>Optionen</label>
-        <div style="display:flex; gap:10px;">
-            <label><input type="checkbox" id="titleShowSet" checked onchange="applyAllSettings()"> Titel</label>
-            <label><input type="checkbox" id="valLabelSet" checked onchange="applyAllSettings()"> Werte</label>
-            <label id="pieInsideGroup"><input type="checkbox" id="pieInsideSet" onchange="applyAllSettings()"> Werte im Kreis</label>
-            <label><input type="checkbox" id="gridSet" checked onchange="applyAllSettings()"> Gitter</label>
-            <label><input type="checkbox" id="multiColorSet" checked onchange="applyAllSettings()"> Mehrfarbig</label>
-        </div>
+
+    <div id="header-editor">
+        <input type="number" id="headSizeIn" value="40" style="width:50px" oninput="formatTitle('fontSize', this.value + 'px')">
+        <button onclick="formatTitle('underline')"><u>U</u></button>
+        <button onclick="formatTitle('justifyLeft')">⬅</button>
+        <button onclick="formatTitle('justifyCenter')">Center</button>
+        <button onclick="formatTitle('justifyRight')">➡</button>
     </div>
-</div>
 
-<div id="header-editor">
-    <input type="number" id="headSizeIn" value="40" style="width:50px" oninput="formatTitle('fontSize', this.value + 'px')">
-    <button onclick="formatTitle('underline')"><u>U</u></button>
-    <button onclick="formatTitle('justifyLeft')">⬅</button>
-    <button onclick="formatTitle('justifyCenter')">Center</button>
-    <button onclick="formatTitle('justifyRight')">➡</button>
-</div>
+    <div id="emoji-picker">
+        <span class="emoji-btn" onclick="setEmoji('')">❌</span>
+        <span class="emoji-btn" onclick="setEmoji('👑')">👑</span><span class="emoji-btn" onclick="setEmoji('⚔️')">⚔️</span>
+        <span class="emoji-btn" onclick="setEmoji('💡')">💡</span><span class="emoji-btn" onclick="setEmoji('📜')">📜</span>
+        <span class="emoji-btn" onclick="setEmoji('🔥')">🔥</span><span class="emoji-btn" onclick="setEmoji('🌍')">🌍</span>
+    </div>
 
-<div id="export-area" style="display:none;">
-    <h1 id="title-el" contenteditable="true" onfocus="showTitleEditor(event)">Mein Diagramm</h1>
-    <div id="chart-area"></div>
-    <div id="footer-text" style="position:absolute; bottom:20px; right:40px; font-size:12px; color:#999;">erstellt mit Diagramm Generator</div>
-</div>
+    <div id="export-area">
+        <h1 id="title-el" contenteditable="true" onfocus="showTitleEditor(event)">Mein Zeitstrahl</h1>
+        <div class="main-timeline-line"></div>
+        <div id="events-container"></div>
+        <div id="footer-text" style="position:absolute; bottom:20px; right:40px; font-size:12px; color:#999;">erstellt mit https://jasonnewacc.github.io/zeitstrahl.github.io/main</div>
+    </div>
 
 <script>
-    const PALETTE = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5', '#70AD47', '#264478', '#9E480E'];
-    let dataPoints = [];
-    let currentType = 'bar';
-    let activeIdx = -1;
-
-    function selectType(type) {
-        currentType = type;
-        document.getElementById('type-picker').style.display = 'none';
-        document.querySelector('.main-controls').style.display = 'flex';
-        document.getElementById('export-area').style.display = 'block';
-        document.getElementById('typeSelect').value = type;
-        applyAllSettings();
-    }
-
-    function updateInputMode() {
-        const valueIn = document.getElementById('valueIn');
-        const percentIn = document.getElementById('percentIn');
-        const pieInsideGroup = document.getElementById('pieInsideGroup');
-
-        const isPie = currentType === 'pie';
-        valueIn.style.display = isPie ? 'none' : 'inline-block';
-        percentIn.style.display = isPie ? 'inline-block' : 'none';
-        pieInsideGroup.style.display = isPie ? 'inline-block' : 'none';
-    }
-
-    function switchType(type) {
-        currentType = type;
-        updateInputMode();
-        render();
-    }
+    let eventsData = [];
+    let activeEventIdx = -1;
+    let presIdx = -1;
 
     function toggleSettings() {
         const s = document.getElementById('settings-menu');
@@ -261,7 +219,7 @@
     }
 
     function formatTitle(cmd, val = null) {
-        if (cmd === 'fontSize') document.getElementById('title-el').style.fontSize = val;
+        if(cmd === 'fontSize') document.getElementById('title-el').style.fontSize = val;
         else document.execCommand(cmd, false, val);
     }
 
@@ -269,318 +227,145 @@
         const area = document.getElementById('export-area');
         area.style.width = document.getElementById('wSet').value + "px";
         area.style.height = document.getElementById('hSet').value + "px";
-        document.documentElement.style.setProperty('--label-size', document.getElementById('labelSizeSet').value + "px");
-        document.documentElement.style.setProperty('--value-size', document.getElementById('valueSizeSet').value + "px");
-        document.documentElement.style.setProperty('--accent-color', document.getElementById('colorSet').value);
-        document.documentElement.style.setProperty('--accent-weight', document.getElementById('weightSet').value + "px");
+        document.documentElement.style.setProperty('--year-size', document.getElementById('yearSizeSet').value + "px");
+        document.documentElement.style.setProperty('--info-size', document.getElementById('infoSizeSet').value + "px");
+        document.documentElement.style.setProperty('--line-color', document.getElementById('lineColorSet').value);
+        document.documentElement.style.setProperty('--line-weight', document.getElementById('lineWeightSet').value + "px");
         document.getElementById('title-el').style.display = document.getElementById('titleShowSet').checked ? 'block' : 'none';
-        document.getElementById('orientGroup').style.display = currentType === 'bar' ? 'flex' : 'none';
-        updateInputMode();
+        document.getElementById('footer-text').style.display = document.getElementById('footSet').checked ? 'block' : 'none';
         render();
     }
 
-    function addPoint() {
-        const l = document.getElementById('labelIn');
-        const valueIn = document.getElementById('valueIn');
-        const percentIn = document.getElementById('percentIn');
+    function parseYear(val) {
+        let str = val.toString().toLowerCase();
+        let num = parseInt(str.replace(/[^0-9-]/g, ''));
+        if (isNaN(num)) return 0;
+        return (str.includes('v.') || str.includes('vor')) ? -Math.abs(num) : num;
+    }
 
-        const input = currentType === 'pie' ? percentIn : valueIn;
-        const num = parseFloat(input.value.replace(',', '.'));
-
-        if (!l.value.trim() || isNaN(num)) return;
-
-        if (currentType === 'pie') {
-            if (num < 0 || num > 100) {
-                alert('Bitte einen Prozentsatz zwischen 0 und 100 eingeben.');
-                return;
-            }
-
-            const currentTotal = dataPoints.reduce((sum, p) => sum + p.value, 0);
-            if (currentTotal + num > 100.000001) {
-                alert('Die Summe der Prozente darf 100 % nicht überschreiten.');
-                return;
-            }
-        }
-
-        dataPoints.push({ id: Date.now(), label: l.value.trim(), value: num });
-        l.value = "";
-        input.value = "";
-        l.focus();
+    function addEvent() {
+        const y = document.getElementById('yearIn'), d = document.getElementById('descIn');
+        if(!y.value || !d.value) return;
+        eventsData.push({ id: Date.now(), year: y.value, desc: d.value, icon: '' });
+        y.value=""; d.value=""; y.focus();
         render();
     }
 
-    function deletePoint(idx) {
-        dataPoints.splice(idx, 1);
+    function sortEvents() {
+        eventsData.sort((a, b) => parseYear(a.year) - parseYear(b.year));
         render();
     }
 
-    function sortPoints() {
-        dataPoints.sort((a, b) => b.value - a.value);
-        render();
+    function togglePresentation() {
+        document.body.classList.toggle('pres-mode');
+        presIdx = -1;
+        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
     }
 
-    function colorFor(i) {
-        if (currentType === 'pie') return PALETTE[i % PALETTE.length];
-        const multi = document.getElementById('multiColorSet').checked;
-        return multi ? PALETTE[i % PALETTE.length] : getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+    document.addEventListener('keydown', (e) => {
+        if(e.key.toLowerCase() === 'p') togglePresentation();
+        if(!document.body.classList.contains('pres-mode')) return;
+        if(e.key === 'ArrowRight') { presIdx = Math.min(presIdx + 1, eventsData.length - 1); updateFocus(); }
+        if(e.key === 'ArrowLeft') { presIdx = Math.max(presIdx - 1, 0); updateFocus(); }
+    });
+
+    function updateFocus() {
+        document.querySelectorAll('.event').forEach(el => el.classList.remove('focus-event'));
+        const target = document.querySelector(`#ev-dom-${presIdx}`);
+        if(target) target.classList.add('focus-event');
     }
 
     function render() {
-        const chart = document.getElementById('chart-area');
+        const container = document.getElementById('events-container');
+        container.innerHTML = "";
+        const showIcons = document.getElementById('allowIcons').checked;
+        const width = parseInt(document.getElementById('wSet').value);
+        const lineWeight = parseInt(document.getElementById('lineWeightSet').value);
+        const gapAdj = parseInt(document.getElementById('gapAdjSet').value); 
+        const timelineY = 55; 
 
-        // Alte Achsenbeschriftungen lagen als Geschwister von #chart-area
-        // und wurden beim Rerender nicht von chart.innerHTML erfasst.
-        document.querySelectorAll('#axis-labels').forEach(el => el.remove());
+        const paddingSide = 120; 
+        const availableWidth = width - (paddingSide * 2);
 
-        chart.innerHTML = "";
-        if (currentType === 'bar') renderBar(chart);
-        else if (currentType === 'line') renderLine(chart);
-        else renderPie(chart);
-    }
+        eventsData.forEach((ev, i) => {
+            const isTop = i % 2 === 0;
+            let pos = (eventsData.length > 1) 
+                ? paddingSide + (i / (eventsData.length - 1)) * availableWidth 
+                : width / 2;
 
-    function addGrid(chart) {
-        if (!document.getElementById('gridSet').checked) return;
-        [0, 25, 50, 75].forEach(pct => {
-            const g = document.createElement('div');
-            g.className = 'gridline';
-            g.style.bottom = pct + '%';
-            chart.appendChild(g);
-        });
-    }
-
-    function renderBar(chart) {
-        addGrid(chart);
-        const showVal = document.getElementById('valLabelSet').checked;
-        const orient = document.getElementById('orientSet').value;
-        const maxVal = Math.max(...dataPoints.map(p => p.value), 1);
-
-        const barsRow = document.createElement('div');
-        barsRow.id = 'bars-row';
-        const axisLabels = document.createElement('div');
-        axisLabels.id = 'axis-labels';
-        axisLabels.className = 'axis-labels-' + orient;
-
-        dataPoints.forEach((p, i) => {
-            const col = document.createElement('div');
-            col.className = 'bar-col';
-            col.oncontextmenu = (e) => { e.preventDefault(); deletePoint(i); };
-
-            const val = document.createElement('div');
-            val.className = 'bar-value';
-            val.contentEditable = true;
-            val.style.display = showVal ? 'block' : 'none';
-            val.innerText = p.value;
-            val.onblur = () => { const n = parseFloat(val.innerText.replace(',', '.')); if (!isNaN(n)) { p.value = n; render(); } };
-
-            const bar = document.createElement('div');
-            bar.className = 'bar';
-            bar.style.height = ((p.value / maxVal) * 100) + '%';
-            bar.style.background = colorFor(i);
-
-            col.appendChild(val);
-            col.appendChild(bar);
-            barsRow.appendChild(col);
-
-            const axisCol = document.createElement('div');
-            axisCol.className = 'axis-col';
-            const lbl = document.createElement('div');
-            lbl.className = 'axis-label';
-            lbl.contentEditable = true;
-            lbl.innerText = p.label;
-            lbl.onblur = () => { p.label = lbl.innerText; };
-            axisCol.appendChild(lbl);
-            axisLabels.appendChild(axisCol);
-        });
-
-        chart.style.height = '400px';
-        chart.appendChild(barsRow);
-        chart.parentElement.style.paddingBottom = orient === 'horizontal' ? '60px' : '100px';
-        chart.after(axisLabels);
-    }
-
-    function renderLine(chart) {
-        addGrid(chart);
-        const showVal = document.getElementById('valLabelSet').checked;
-        const maxVal = Math.max(...dataPoints.map(p => p.value), 1);
-        const n = dataPoints.length;
-        const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
-        const pad = 6;
-
-        const svgNS = "http://www.w3.org/2000/svg";
-        const svg = document.createElementNS(svgNS, "svg");
-        svg.id = 'line-svg';
-        svg.setAttribute('viewBox', '0 0 100 100');
-        svg.setAttribute('preserveAspectRatio', 'none');
-        const poly = document.createElementNS(svgNS, "polyline");
-        poly.setAttribute('fill', 'none');
-        poly.setAttribute('stroke', accent);
-        poly.setAttribute('stroke-width', '2');
-        poly.setAttribute('vector-effect', 'non-scaling-stroke');
-
-        let pts = [];
-        const axisLabels = document.createElement('div');
-        axisLabels.id = 'axis-labels';
-
-        dataPoints.forEach((p, i) => {
-            const x = n > 1 ? pad + (i / (n - 1)) * (100 - 2 * pad) : 50;
-            const y = 95 - pad - (p.value / maxVal) * (95 - 2 * pad);
-            pts.push(x + ',' + y);
-
-            const marker = document.createElement('div');
-            marker.className = 'line-point';
-            marker.style.left = x + '%';
-            marker.style.top = y + '%';
-            marker.style.borderColor = accent;
-            marker.oncontextmenu = (e) => { e.preventDefault(); deletePoint(i); };
-            chart.appendChild(marker);
-
-            const val = document.createElement('div');
-            val.className = 'line-value';
-            val.contentEditable = true;
-            val.style.display = showVal ? 'block' : 'none';
-            val.style.left = x + '%';
-            val.style.top = y + '%';
-            val.innerText = p.value;
-            val.onblur = () => { const num = parseFloat(val.innerText.replace(',', '.')); if (!isNaN(num)) { p.value = num; render(); } };
-            chart.appendChild(val);
-
-            const axisCol = document.createElement('div');
-            axisCol.className = 'axis-col';
-            const lbl = document.createElement('div');
-            lbl.className = 'axis-label';
-            lbl.contentEditable = true;
-            lbl.innerText = p.label;
-            lbl.onblur = () => { p.label = lbl.innerText; };
-            axisCol.appendChild(lbl);
-            axisLabels.appendChild(axisCol);
-        });
-
-        poly.setAttribute('points', pts.join(' '));
-        svg.appendChild(poly);
-        chart.style.height = '400px';
-        chart.appendChild(svg);
-        chart.parentElement.style.paddingBottom = '60px';
-        chart.after(axisLabels);
-    }
-
-    function renderPie(chart) {
-        const showVal = document.getElementById('valLabelSet').checked;
-        const showInside = document.getElementById('pieInsideSet').checked;
-        const total = dataPoints.reduce((s, p) => s + p.value, 0);
-
-        const wrapper = document.createElement('div');
-        wrapper.id = 'pie-wrapper';
-
-        const pie = document.createElement('div');
-        pie.id = 'pie-visual';
-
-        const legend = document.createElement('div');
-        legend.id = 'pie-legend';
-
-        let acc = 0;
-        let gradientParts = [];
-
-        dataPoints.forEach((p, i) => {
-            const start = acc;
-            acc += p.value;
-            const end = acc;
-            const color = colorFor(i);
-            gradientParts.push(`${color} ${start}% ${end}%`);
-
-            // Wert/Prozent direkt im Kreis anzeigen (optional).
-            if (showInside && p.value > 0) {
-                const midAngle = ((start + end) / 2) * 3.6 - 90;
-                const radius = 35;
-                const x = 50 + Math.cos(midAngle * Math.PI / 180) * radius;
-                const y = 50 + Math.sin(midAngle * Math.PI / 180) * radius;
-
-                const insideValue = document.createElement('div');
-                insideValue.className = 'pie-value';
-                insideValue.style.left = x + '%';
-                insideValue.style.top = y + '%';
-                insideValue.innerText = p.value + '%';
-                pie.appendChild(insideValue);
+            const div = document.createElement('div');
+            div.className = `event ${isTop ? 'top' : 'bottom'}`;
+            div.id = `ev-dom-${i}`;
+            div.style.left = pos + "px";
+            
+            if(isTop) {
+                div.style.bottom = (100 - timelineY) + "%"; 
+                div.style.marginBottom = ((lineWeight / 2) - gapAdj) + "px";
+                div.style.top = "auto";
+            } else {
+                div.style.top = timelineY + "%";
+                div.style.marginTop = ((lineWeight / 2) - gapAdj) + "px";
+                div.style.bottom = "auto";
             }
 
-            const row = document.createElement('div');
-            row.className = 'legend-row';
-            row.oncontextmenu = (e) => { e.preventDefault(); deletePoint(i); };
+            const contentHtml = `
+                <div class="content-box">
+                    <div class="year" contenteditable="true" onblur="eventsData[${i}].year=this.innerText">${ev.year}</div>
+                    <div class="divider"></div>
+                    <div class="description" contenteditable="true" onblur="eventsData[${i}].desc=this.innerText" oninput="checkLimit(this)">${ev.desc}</div>
+                </div>`;
+            
+            const connectorHtml = `
+                <div class="connector" onclick="openEmojiPicker(event, ${i})" oncontextmenu="event.preventDefault(); eventsData.splice(${i},1); render();">
+                    ${(showIcons && ev.icon) ? `<div class="milestone-badge">${ev.icon}</div>` : ''}
+                </div>`;
 
-            const swatch = document.createElement('div');
-            swatch.className = 'legend-swatch';
-            swatch.style.background = color;
-
-            const lbl = document.createElement('div');
-            lbl.className = 'legend-label';
-            lbl.contentEditable = true;
-            lbl.innerText = p.label;
-            lbl.onblur = () => { p.label = lbl.innerText; };
-
-            const val = document.createElement('div');
-            val.className = 'legend-value';
-            val.contentEditable = true;
-            val.style.display = showVal ? 'block' : 'none';
-            val.innerText = p.value + '%';
-            val.onblur = () => {
-                const num = parseFloat(val.innerText.replace(',', '.').replace('%', ''));
-                if (!isNaN(num) && num >= 0 && num <= 100) {
-                    const otherTotal = total - p.value;
-                    if (otherTotal + num <= 100.000001) {
-                        p.value = num;
-                        render();
-                    }
-                }
-            };
-
-            const pct = document.createElement('div');
-            pct.className = 'legend-pct';
-            pct.innerText = '';
-
-            row.appendChild(swatch);
-            row.appendChild(lbl);
-            row.appendChild(val);
-            row.appendChild(pct);
-            legend.appendChild(row);
+            div.innerHTML = isTop ? (contentHtml + connectorHtml) : (connectorHtml + contentHtml);
+            container.appendChild(div);
+            checkLimit(div.querySelector('.description'));
         });
-
-        pie.style.background = dataPoints.length
-            ? `conic-gradient(${gradientParts.join(', ')})`
-            : '#eee';
-
-        wrapper.appendChild(pie);
-        wrapper.appendChild(legend);
-        chart.style.height = '400px';
-        chart.appendChild(wrapper);
-        chart.parentElement.style.paddingBottom = '60px';
-
-        const totalInfo = document.createElement('div');
-        totalInfo.id = 'pie-total-info';
-        if (Math.abs(total - 100) < 0.000001) {
-            totalInfo.innerText = 'Summe: 100 %';
-        } else if (total < 100) {
-            totalInfo.innerText = `Summe: ${Number(total.toFixed(2))} % – noch ${Number((100 - total).toFixed(2))} % offen`;
-        } else {
-            totalInfo.innerText = `Summe: ${Number(total.toFixed(2))} %`;
-        }
-        chart.appendChild(totalInfo);
     }
 
-  function downloadPDF() {
+    function checkLimit(el) {
+        if(!el) return;
+        const limit = parseInt(document.getElementById('limitSet').value);
+        const hardStop = document.getElementById('hardStopSet').checked;
+        if(el.innerText.length > limit) {
+            if(hardStop) el.innerText = el.innerText.substring(0, limit);
+            else el.classList.add('limit-exceeded');
+        } else el.classList.remove('limit-exceeded');
+    }
+
+    function openEmojiPicker(e, idx) {
+        e.stopPropagation(); activeEventIdx = idx;
+        const p = document.getElementById('emoji-picker');
+        p.style.display = 'grid'; p.style.left = e.pageX + 'px'; p.style.top = e.pageY + 'px';
+    }
+
+    function setEmoji(emoji) {
+        if(activeEventIdx !== -1) { eventsData[activeEventIdx].icon = emoji; render(); }
+        document.getElementById('emoji-picker').style.display = 'none';
+    }
+
+    function downloadPDF() {
         const area = document.getElementById('export-area');
         const w = parseInt(document.getElementById('wSet').value);
         const h = parseInt(document.getElementById('hSet').value);
-
+        
         html2pdf().set({
-            margin: 0,
-            filename: 'diagramm.pdf',
+            margin: 0, 
+            filename: 'zeitstrahl.pdf', 
             html2canvas: { scale: 2, useCORS: true, logging: false },
             jsPDF: { unit: 'px', format: [w, h], orientation: 'landscape' }
         }).from(area).save();
     }
 
     document.addEventListener('mousedown', (e) => {
-        if (!e.target.closest('#header-editor') && !e.target.closest('#title-el')) document.getElementById('header-editor').style.display = 'none';
+        if(!e.target.closest('#header-editor') && !e.target.closest('#title-el')) document.getElementById('header-editor').style.display = 'none';
+        if(!e.target.closest('#emoji-picker')) document.getElementById('emoji-picker').style.display = 'none';
     });
+
+    applyAllSettings();
 </script>
 </body>
 </html>
