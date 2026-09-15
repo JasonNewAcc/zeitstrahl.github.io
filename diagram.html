@@ -12,6 +12,21 @@
             --value-size: 16px;
         }
 
+        .btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            background: #4472C4;
+            color: white;
+        }   
+
+        .btn:hover {
+            background: #365f9f;
+        }
+
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
             background: #cbd2d9; margin: 0; padding: 20px;
@@ -123,17 +138,17 @@
     <h1>Diagramm Generator</h1>
     <p>Wähle einen Diagrammtyp aus, um zu starten</p>
     <div class="type-cards">
-        <div class="type-card" onclick="selectType('bar')">
+<button class="btn" style="background:#28a745; color:white;" onclick="selectType('bar')">
             <div class="icon">📊</div>
             <div class="name">Balkendiagramm</div>
             <div class="desc">Werte als Balken vergleichen</div>
-        </div>
-        <div class="type-card" onclick="selectType('line')">
+        </button>
+        <button class="btn" style="background:#77bee7; color:white;" onclick="selectType('line')">
             <div class="icon">📈</div>
             <div class="name">Kurvendiagramm</div>
             <div class="desc">Entwicklung über Punkte hinweg</div>
-        </div>
-        <div class="type-card" onclick="selectType('pie')">
+        </button>
+        <button class="btn" style="background:#f39c12; color:white;" onclick="selectType('pie')">
             <div class="icon">🥧</div>
             <div class="name">Klassisches Diagramm</div>
             <div class="desc">Kreisdiagramm mit Anteilen</div>
