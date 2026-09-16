@@ -81,14 +81,20 @@
 
         #bars-row {
             position: absolute; left: 0; right: 0; bottom: 0; top: 0;
-            display: flex; align-items: flex-end; justify-content: space-evenly;
+            display: flex; align-items: flex-end; justify-content: center;
             border-bottom: var(--accent-weight) solid var(--accent-color);
         }
+        .bar-cluster { display: flex; align-items: flex-end; justify-content: space-evenly; height: 100%; flex: 1; }
+        .group-divider { align-self: stretch; width: 2px; background: #ccc; margin: 0 22px; flex-shrink: 0; }
         .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; flex: 1; max-width: 140px; }
         .bar-value { font-size: var(--value-size); font-weight: bold; margin-bottom: 4px; outline: none; color: #333; }
         .bar { width: 60%; max-width: 70px; border-radius: 6px 6px 0 0; transition: height 0.2s; cursor: pointer; }
 
-        #axis-labels { display: flex; justify-content: space-evenly; margin-top: 10px; }
+        #axis-labels { display: flex; justify-content: center; margin-top: 10px; }
+        .axis-cluster { display: flex; flex-direction: column; flex: 1; }
+        .axis-cluster-row { display: flex; justify-content: space-evenly; }
+        .axis-divider-spacer { width: 2px; margin: 0 22px; flex-shrink: 0; }
+        .group-title { font-weight: bold; text-align: center; margin-top: 6px; font-size: calc(var(--label-size) + 2px); color: #333; }
         .axis-col { flex: 1; max-width: 140px; display: flex; justify-content: center; }
         .axis-label { font-size: var(--label-size); outline: none; white-space: nowrap; padding: 4px; border-radius: 4px; }
         .axis-labels-horizontal .axis-label { transform: none; }
@@ -135,24 +141,11 @@
 <body>
 
 <div id="type-picker">
-    <h1>Diagramm Generator</h1>
     <p>Wähle einen Diagrammtyp aus, um zu starten</p>
-    <div class="type-cards">
-<button class="btn" style="background:#28a745; color:white;" onclick="selectType('bar')">
-            <div class="icon">📊</div>
-            <div class="name">Balkendiagramm</div>
-            <div class="desc"></div>
-        </button>
-        <button class="btn" style="background:#77bee7; color:white;" onclick="selectType('line')">
-            <div class="icon">📈</div>
-            <div class="name">Kurvendiagramm</div>
-            <div class="desc"></div>
-        </button>
-        <button class="btn" style="background:#f39c12; color:white;" onclick="selectType('pie')">
-            <div class="icon">🥧</div>
-            <div class="name">Klassisches Diagramm</div>
-            <div class="desc"></div>
-        </div>
+    <div class="type-buttons">
+        <button class="btn" style="background:#28a745; color:white;" onclick="selectType('bar')">Balkendiagramm</button>
+        <button class="btn" style="background:#77bee7; color:white;" onclick="selectType('line')">Kurvendiagramm</button>
+        <button class="btn" style="background:#f39c12; color:white;" onclick="selectType('pie')">Klassisches Diagramm</button>
     </div>
 </div>
 
@@ -172,6 +165,7 @@
     <input type="text" id="labelIn" class="input-box" placeholder="Beschriftung" style="width: 150px;">
     <input type="text" id="valueIn" class="input-box" placeholder="Wert" style="width: 90px;" onkeydown="if(event.key==='Enter') addPoint()">
     <input type="text" id="percentIn" class="input-box percentage-input" placeholder="Prozent (z.B. 25)" style="width: 120px;" onkeydown="if(event.key==='Enter') addPoint()">
+    <input type="text" id="groupIn" class="input-box" placeholder="Gruppe, z.B. 2008 (optional)" style="width: 170px; display:none;" onkeydown="if(event.key==='Enter') addPoint()">
 
     <button class="btn btn-add" onclick="addPoint()">Hinzufügen</button>
     <button class="btn" style="background:#f39c12; color:white" onclick="sortPoints()">Sortieren</button>
@@ -234,11 +228,13 @@
         const valueIn = document.getElementById('valueIn');
         const percentIn = document.getElementById('percentIn');
         const pieInsideGroup = document.getElementById('pieInsideGroup');
+        const groupIn = document.getElementById('groupIn');
 
         const isPie = currentType === 'pie';
         valueIn.style.display = isPie ? 'none' : 'inline-block';
         percentIn.style.display = isPie ? 'inline-block' : 'none';
         pieInsideGroup.style.display = isPie ? 'inline-block' : 'none';
+        groupIn.style.display = currentType === 'bar' ? 'inline-block' : 'none';
     }
 
     function switchType(type) {
@@ -302,7 +298,10 @@
             }
         }
 
-        dataPoints.push({ id: Date.now(), label: l.value.trim(), value: num });
+        const groupIn = document.getElementById('groupIn');
+        const group = (currentType === 'bar' && groupIn.value.trim()) ? groupIn.value.trim() : '';
+
+        dataPoints.push({ id: Date.now(), label: l.value.trim(), value: num, group });
         l.value = "";
         input.value = "";
         l.focus();
@@ -348,11 +347,25 @@
         });
     }
 
+    function groupPoints(points) {
+        // Gruppiert Punkte nach p.group, behält dabei die Original-Reihenfolge
+        // (und damit den globalen Index für Bearbeiten/Löschen) bei.
+        const map = new Map();
+        points.forEach((p, i) => {
+            const key = p.group && p.group.trim() ? p.group.trim() : '__default__';
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push({ p, i });
+        });
+        return map;
+    }
+
     function renderBar(chart) {
         addGrid(chart);
         const showVal = document.getElementById('valLabelSet').checked;
         const orient = document.getElementById('orientSet').value;
         const maxVal = Math.max(...dataPoints.map(p => p.value), 1);
+        const groups = groupPoints(dataPoints);
+        const isGrouped = groups.size > 1;
 
         const barsRow = document.createElement('div');
         barsRow.id = 'bars-row';
@@ -360,41 +373,81 @@
         axisLabels.id = 'axis-labels';
         axisLabels.className = 'axis-labels-' + orient;
 
-        dataPoints.forEach((p, i) => {
-            const col = document.createElement('div');
-            col.className = 'bar-col';
-            col.oncontextmenu = (e) => { e.preventDefault(); deletePoint(i); };
+        let groupIndex = 0;
+        groups.forEach((entries, key) => {
+            if (groupIndex > 0) {
+                const divider = document.createElement('div');
+                divider.className = 'group-divider';
+                barsRow.appendChild(divider);
 
-            const val = document.createElement('div');
-            val.className = 'bar-value';
-            val.contentEditable = true;
-            val.style.display = showVal ? 'block' : 'none';
-            val.innerText = p.value;
-            val.onblur = () => { const n = parseFloat(val.innerText.replace(',', '.')); if (!isNaN(n)) { p.value = n; render(); } };
+                const spacer = document.createElement('div');
+                spacer.className = 'axis-divider-spacer';
+                axisLabels.appendChild(spacer);
+            }
 
-            const bar = document.createElement('div');
-            bar.className = 'bar';
-            bar.style.height = ((p.value / maxVal) * 100) + '%';
-            bar.style.background = colorFor(i);
+            const cluster = document.createElement('div');
+            cluster.className = 'bar-cluster';
+            const axisCluster = document.createElement('div');
+            axisCluster.className = 'axis-cluster';
+            const axisRow = document.createElement('div');
+            axisRow.className = 'axis-cluster-row';
 
-            col.appendChild(val);
-            col.appendChild(bar);
-            barsRow.appendChild(col);
+            entries.forEach(({ p, i }) => {
+                const col = document.createElement('div');
+                col.className = 'bar-col';
+                col.oncontextmenu = (e) => { e.preventDefault(); deletePoint(i); };
 
-            const axisCol = document.createElement('div');
-            axisCol.className = 'axis-col';
-            const lbl = document.createElement('div');
-            lbl.className = 'axis-label';
-            lbl.contentEditable = true;
-            lbl.innerText = p.label;
-            lbl.onblur = () => { p.label = lbl.innerText; };
-            axisCol.appendChild(lbl);
-            axisLabels.appendChild(axisCol);
+                const val = document.createElement('div');
+                val.className = 'bar-value';
+                val.contentEditable = true;
+                val.style.display = showVal ? 'block' : 'none';
+                val.innerText = p.value;
+                val.onblur = () => { const n = parseFloat(val.innerText.replace(',', '.')); if (!isNaN(n)) { p.value = n; render(); } };
+
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = ((p.value / maxVal) * 100) + '%';
+                bar.style.background = colorFor(i);
+
+                col.appendChild(val);
+                col.appendChild(bar);
+                cluster.appendChild(col);
+
+                const axisCol = document.createElement('div');
+                axisCol.className = 'axis-col';
+                const lbl = document.createElement('div');
+                lbl.className = 'axis-label';
+                lbl.contentEditable = true;
+                lbl.innerText = p.label;
+                lbl.onblur = () => { p.label = lbl.innerText; };
+                axisCol.appendChild(lbl);
+                axisRow.appendChild(axisCol);
+            });
+
+            axisCluster.appendChild(axisRow);
+
+            if (isGrouped) {
+                const title = document.createElement('div');
+                title.className = 'group-title';
+                title.contentEditable = true;
+                title.innerText = key === '__default__' ? '—' : key;
+                title.onblur = () => {
+                    const newKey = title.innerText.trim();
+                    entries.forEach(({ p }) => { p.group = newKey; });
+                };
+                axisCluster.appendChild(title);
+            }
+
+            barsRow.appendChild(cluster);
+            axisLabels.appendChild(axisCluster);
+            groupIndex++;
         });
 
         chart.style.height = '400px';
         chart.appendChild(barsRow);
-        chart.parentElement.style.paddingBottom = orient === 'horizontal' ? '60px' : '100px';
+        let padding = orient === 'horizontal' ? 60 : 100;
+        if (isGrouped) padding += 30;
+        chart.parentElement.style.paddingBottom = padding + 'px';
         chart.after(axisLabels);
     }
 
